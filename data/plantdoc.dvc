@@ -1,0 +1,6 @@
+outs:
+- md5: 588992cfbce5a94a4c7bab5e1d5548d2.dir
+  size: 962793405
+  nfiles: 2504
+  hash: md5
+  path: plantdoc
