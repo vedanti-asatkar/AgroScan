@@ -1,0 +1,5 @@
+outs:
+- md5: 35da935c79731d494875267fd6c19d65
+  size: 23622328
+  hash: md5
+  path: mobilenetv2_combined_v2.h5
