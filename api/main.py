@@ -1,5 +1,6 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 import tensorflow as tf
 import numpy as np
 from PIL import Image
@@ -42,3 +43,5 @@ async def predict(file: UploadFile = File(...)):
         "predicted_class": predicted_class,
         "confidence": round(confidence, 4)
     })
+
+app.mount("/ui", StaticFiles(directory="ui", html=True), name="ui")

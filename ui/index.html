@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgroScan</title>
+<style>
+  :root {
+    --bg: #f4f7f2; --card: #fff; --text: #1d2a1f; --muted: #66756a;
+    --border: #dbe4d8; --accent: #2f7d3b; --accent-soft: #e4f2e5;
+    --warn: #b3441f; --warn-soft: #fbe9e2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12180f; --card: #1b2318; --text: #e6efe3; --muted: #93a38f;
+      --border: #2d3a29; --accent: #5fbf6e; --accent-soft: #223a25;
+      --warn: #f0906b; --warn-soft: #3d2519;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 560px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { margin: 0; font-size: 1.6rem; }
+  .sub { color: var(--muted); margin: 4px 0 24px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+  }
+  .drop {
+    display: block; border: 2px dashed var(--border); border-radius: 12px;
+    text-align: center; padding: 28px 16px; cursor: pointer; color: var(--muted);
+  }
+  .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .drop input { display: none; }
+  .preview { display: none; width: 100%; max-height: 320px; object-fit: contain; border-radius: 10px; margin-bottom: 16px; }
+  button {
+    margin-top: 16px; width: 100%; padding: 12px; border: 0; border-radius: 10px;
+    background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .result { display: none; margin-top: 20px; padding: 16px; border-radius: 12px; }
+  .result.ok { display: block; background: var(--accent-soft); }
+  .result.bad { display: block; background: var(--warn-soft); }
+  .label { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .plant { font-size: 1.3rem; font-weight: 700; margin: 2px 0; }
+  .bar { height: 10px; border-radius: 6px; background: var(--border); overflow: hidden; margin: 10px 0 4px; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .4s; }
+  .result.bad .bar > div { background: var(--warn); }
+  .note { color: var(--muted); font-size: .85rem; }
+  .error { color: var(--warn); margin-top: 16px; display: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🌿 AgroScan</h1>
+  <p class="sub">Upload a leaf photo to check for disease.</p>
+
+  <div class="card">
+    <img id="preview" class="preview" alt="Selected leaf">
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept="image/*">
+      <span id="dropText">Click or drag a leaf image here</span>
+    </label>
+    <button id="go" disabled>Analyze</button>
+    <div class="error" id="error"></div>
+
+    <div class="result" id="result">
+      <div class="label" id="status"></div>
+      <div class="plant" id="disease"></div>
+      <div class="note" id="plant"></div>
+      <div class="bar"><div id="fill"></div></div>
+      <div class="note"><span id="pct"></span> confidence</div>
+      <div class="note" id="lowconf" style="display:none;margin-top:8px">
+        Low confidence — try a closer, well-lit photo of a single leaf.
+      </div>
+    </div>
+  </div>
+  <p class="note" style="margin-top:16px">Supports pepper, potato and tomato leaves.</p>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const fileInput = $('file'), drop = $('drop'), go = $('go');
+let file = null;
+
+function pick(f) {
+  if (!f || !f.type.startsWith('image/')) return;
+  file = f;
+  $('preview').src = URL.createObjectURL(f);
+  $('preview').style.display = 'block';
+  $('dropText').textContent = f.name;
+  go.disabled = false;
+  $('result').className = 'result';
+  $('error').style.display = 'none';
+}
+
+fileInput.onchange = () => pick(fileInput.files[0]);
+['dragenter', 'dragover'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', ev => pick(ev.dataTransfer.files[0]));
+
+// "Tomato_Late_blight" / "Pepper__bell___Bacterial_spot" -> plant + condition
+function parse(cls) {
+  const [plant, ...rest] = cls.split(/_+/);
+  const cond = rest.filter(w => w !== 'bell').join(' ');
+  return { plant, cond: cond.charAt(0).toUpperCase() + cond.slice(1) };
+}
+
+go.onclick = async () => {
+  go.disabled = true; go.textContent = 'Analyzing…';
+  $('error').style.display = 'none';
+  try {
+    const body = new FormData();
+    body.append('file', file);
+    let predicted_class, confidence;
+    if (location.protocol === 'file:') {
+      // Demo mode: page opened directly, no API available
+      await new Promise(r => setTimeout(r, 600));
+      ({ predicted_class, confidence } = { predicted_class: 'Tomato_Late_blight', confidence: 0.9231 });
+    } else {
+      const res = await fetch('/predict', { method: 'POST', body });
+      if (!res.ok) throw new Error('Server returned ' + res.status);
+      ({ predicted_class, confidence } = await res.json());
+    }
+    const { plant, cond } = parse(predicted_class);
+    const healthy = /healthy/i.test(cond);
+    $('result').className = 'result ' + (healthy ? 'ok' : 'bad');
+    $('status').textContent = healthy ? 'Healthy' : 'Disease detected';
+    $('disease').textContent = healthy ? 'No disease found' : cond;
+    $('plant').textContent = plant + ' leaf';
+    $('pct').textContent = (confidence * 100).toFixed(1) + '%';
+    $('fill').style.width = (confidence * 100) + '%';
+    $('lowconf').style.display = confidence < 0.6 ? 'block' : 'none';
+  } catch (e) {
+    $('error').textContent = 'Could not analyze image: ' + e.message;
+    $('error').style.display = 'block';
+  } finally {
+    go.disabled = false; go.textContent = 'Analyze';
+  }
+};
+</script>
+</body>
+</html>
