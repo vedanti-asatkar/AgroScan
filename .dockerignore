@@ -1,0 +1,11 @@
+.git
+data
+venv
+mlruns
+mlartifacts
+mlflow.db
+.smoke
+notebooks
+tests
+__pycache__
+models/*.dvc

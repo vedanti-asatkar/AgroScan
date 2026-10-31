@@ -1,0 +1,8 @@
+-r requirements.txt
+mlflow>=3.0,<4
+dvc[gdrive]>=3.50,<4
+pyOpenSSL<=24.2.1   # required by pydrive2 (dvc gdrive remote)
+scikit-learn>=1.5
+scipy>=1.13
+PyYAML>=6.0
+matplotlib>=3.8

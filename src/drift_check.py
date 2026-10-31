@@ -1,38 +1,62 @@
-import os
+"""Data-drift check: training vs incoming images (class-balanced sample).
+
+KS test on mean brightness and per-channel means; writes reports/drift.json.
+Exits 1 on drift only if drift.fail_on_drift is true (default false).
+"""
+import random
+import sys
+from collections import defaultdict
+
 import numpy as np
 from PIL import Image
 from scipy import stats
-import glob
 
-def get_brightness(folder_path, max_images=200):
-    brightness_values = []
-    # Recursively find all image files, any depth
-    image_paths = glob.glob(os.path.join(folder_path, '**', '*.jpg'), recursive=True)
-    image_paths += glob.glob(os.path.join(folder_path, '**', '*.JPG'), recursive=True)
-    image_paths += glob.glob(os.path.join(folder_path, '**', '*.png'), recursive=True)
+from src.common import load_params, parse_args, read_manifest, write_json
 
-    image_paths = image_paths[:max_images]
 
-    for img_path in image_paths:
+def balanced_sample(rows, per_class, seed=0):
+    by = defaultdict(list)
+    for r in rows:
+        by[r["label"]].append(r["path"])
+    rng = random.Random(seed)
+    out = []
+    for paths in by.values():
+        rng.shuffle(paths)
+        out += paths[:per_class]
+    return out
+
+
+def features(paths):
+    feats = []
+    for p in paths:
         try:
-            img = Image.open(img_path).convert("L")
-            brightness = np.array(img).mean()
-            brightness_values.append(brightness)
+            a = np.asarray(Image.open(p).convert("RGB").resize((64, 64)), dtype=np.float32)
         except Exception:
             continue
-    return np.array(brightness_values)
-train_brightness = get_brightness('data/plantvillage')
-incoming_brightness = get_brightness('data/plantdoc_flat')
+        feats.append([a.mean(), *a.reshape(-1, 3).mean(0)])
+    return np.array(feats)
 
-print(f"Training set: {len(train_brightness)} images, mean brightness: {train_brightness.mean():.2f}")
-print(f"Incoming set: {len(incoming_brightness)} images, mean brightness: {incoming_brightness.mean():.2f}")
 
-ks_stat, p_value = stats.ks_2samp(train_brightness, incoming_brightness)
+def main(params_path):
+    p = load_params(params_path)
+    prep = p["data"]["prepared_dir"]
+    n = p["drift"]["max_per_class"]
+    ref = features(balanced_sample(read_manifest(f"{prep}/train.csv"), n))
+    cur = features(balanced_sample(read_manifest(f"{prep}/test.csv"), n))
+    result, drift = {}, False
+    for i, name in enumerate(["brightness", "red_mean", "green_mean", "blue_mean"]):
+        ks, pv = stats.ks_2samp(ref[:, i], cur[:, i])
+        flag = bool(pv < p["drift"]["alpha"])
+        drift |= flag
+        result[name] = {"ks_stat": float(ks), "p_value": float(pv), "drift": flag}
+    result["n_reference"], result["n_incoming"], result["drift_detected"] = len(ref), len(cur), drift
+    write_json(result, "reports/drift.json")
+    print(result)
+    if drift:
+        print("DRIFT DETECTED")
+        if p["drift"].get("fail_on_drift", False):
+            sys.exit(1)
 
-print(f"\nKS statistic: {ks_stat:.4f}")
-print(f"P-value: {p_value:.6f}")
 
-if p_value < 0.05:
-    print("DRIFT DETECTED — incoming data is statistically different from training data")
-else:
-    print("No significant drift detected")
+if __name__ == "__main__":
+    main(parse_args("Drift check").params)

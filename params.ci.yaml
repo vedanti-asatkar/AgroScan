@@ -1,0 +1,17 @@
+# Tiny config used by CI and local smoke tests on synthetic data.
+classes: [Pepper__bell___Bacterial_spot, Potato___Early_blight, Potato___Late_blight, Tomato_Bacterial_spot, Tomato_Early_blight, Tomato_Late_blight, Tomato_Septoria_leaf_spot, Tomato_healthy]
+plantdoc_name_map:
+  "Bell_pepper leaf spot": Pepper__bell___Bacterial_spot
+  "Potato leaf early blight": Potato___Early_blight
+  "Potato leaf late blight": Potato___Late_blight
+  "Tomato leaf bacterial spot": Tomato_Bacterial_spot
+  "Tomato Early blight leaf": Tomato_Early_blight
+  "Tomato leaf late blight": Tomato_Late_blight
+  "Tomato Septoria leaf spot": Tomato_Septoria_leaf_spot
+  "Tomato leaf": Tomato_healthy
+data: {plantvillage_dir: .smoke/plantvillage, plantdoc_dir: .smoke/plantdoc, prepared_dir: .smoke/prepared, val_fraction: 0.2, seed: 1, plantdoc_oversample: 2}
+model: {img_size: 96, alpha: 0.35, weights: null, dropout: 0.1, bn_momentum: 0.8}
+train: {seed: 1, batch_size: 16, epochs: 6, learning_rate: 0.003, fine_tune_epochs: 0, fine_tune_layers: 10, fine_tune_learning_rate: 0.0001, early_stopping_patience: 6, max_train_images: null}
+evaluate: {min_test_accuracy: 0.0}
+drift: {max_per_class: 10, alpha: 0.05}
+mlflow: {tracking_uri: "sqlite:///.smoke/mlflow.db", experiment: agroscan-smoke, registered_model: agroscan-smoke}
