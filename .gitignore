@@ -1,3 +1,11 @@
 venv/
 __pycache__/
 data/plantdoc_flat/
+# MLOps artifacts
+mlflow.db
+mlruns/
+mlartifacts/
+logs/
+.smoke/
+.pytest_cache/
+.ruff_cache/

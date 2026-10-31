@@ -1,0 +1,61 @@
+# Single source of truth for the pipeline. DVC tracks changes to these keys.
+classes:
+  - Pepper__bell___Bacterial_spot
+  - Potato___Early_blight
+  - Potato___Late_blight
+  - Tomato_Bacterial_spot
+  - Tomato_Early_blight
+  - Tomato_Late_blight
+  - Tomato_Septoria_leaf_spot
+  - Tomato_healthy
+
+# PlantDoc folder name -> model class (taken from notebooks/lime.ipynb)
+plantdoc_name_map:
+  "Bell_pepper leaf spot": Pepper__bell___Bacterial_spot
+  "Potato leaf early blight": Potato___Early_blight
+  "Potato leaf late blight": Potato___Late_blight
+  "Tomato leaf bacterial spot": Tomato_Bacterial_spot
+  "Tomato Early blight leaf": Tomato_Early_blight
+  "Tomato leaf late blight": Tomato_Late_blight
+  "Tomato Septoria leaf spot": Tomato_Septoria_leaf_spot
+  "Tomato leaf": Tomato_healthy
+
+data:
+  plantvillage_dir: data/plantvillage
+  plantdoc_dir: data/plantdoc
+  prepared_dir: data/prepared
+  val_fraction: 0.15
+  seed: 42
+  # PlantDoc-train images are oversampled in the training set (the v2 model
+  # appears to have used 5x; confirm and adjust).
+  plantdoc_oversample: 5
+
+model:
+  img_size: 224
+  alpha: 1.0
+  weights: imagenet      # use null to train from scratch (offline / CI)
+  dropout: 0.2
+
+train:
+  seed: 42
+  batch_size: 32
+  epochs: 8
+  learning_rate: 0.001
+  fine_tune_epochs: 4
+  fine_tune_layers: 30
+  fine_tune_learning_rate: 0.00001
+  early_stopping_patience: 3
+  max_train_images: null  # set an int for quick CPU runs
+
+evaluate:
+  min_test_accuracy: 0.50   # quality gate on PlantDoc test (v2 model: 0.5139)
+
+drift:
+  max_per_class: 50
+  alpha: 0.05
+  fail_on_drift: false   # PlantVillage vs PlantDoc is expected to drift
+
+mlflow:
+  tracking_uri: sqlite:///mlflow.db
+  experiment: agroscan
+  registered_model: agroscan-mobilenetv2

@@ -1,0 +1,58 @@
+stages:
+  prepare:
+    cmd: python -m src.prepare_data
+    deps:
+      - src/prepare_data.py
+      - src/common.py
+      - data/plantvillage
+      - data/plantdoc
+    params:
+      - classes
+      - plantdoc_name_map
+      - data
+    outs:
+      - data/prepared
+  train:
+    cmd: python -m src.train
+    deps:
+      - src/train.py
+      - src/preprocess.py
+      - src/common.py
+      - data/prepared
+    params:
+      - model
+      - train
+      - data.plantdoc_oversample
+      - mlflow
+    outs:
+      - models/model.keras
+      - models/classes.json
+    metrics:
+      - reports/train_metrics.json:
+          cache: false
+  evaluate:
+    cmd: python -m src.evaluate
+    deps:
+      - src/evaluate.py
+      - models/model.keras
+      - data/prepared
+    params:
+      - evaluate
+    metrics:
+      - reports/metrics.json:
+          cache: false
+    outs:
+      - reports/confusion_matrix.png:
+          cache: false
+      - reports/classification_report.json:
+          cache: false
+  drift:
+    cmd: python -m src.drift_check
+    deps:
+      - src/drift_check.py
+      - data/prepared
+    params:
+      - drift
+    outs:
+      - reports/drift.json:
+          cache: false
