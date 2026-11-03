@@ -36,13 +36,13 @@ jobs:
         run: |
           pip install "dvc[gdrive]" "pyOpenSSL<=24.2.1"
           dvc remote modify --local gdrive_remote gdrive_use_service_account true
-          dvc pull models/model.keras models/classes.json
+          dvc pull models/mobilenetv2.keras
       - name: Build image
         run: |
           mkdir -p models
           docker build -t agroscan-api .
       - name: Smoke test container
-        if: hashFiles('models/model.keras') != ''
+        if: hashFiles('models/mobilenetv2.keras') != ''
         run: |
           docker run -d -p 8000:8000 --name api agroscan-api
           for i in $(seq 1 30); do curl -sf localhost:8000/ready && exit 0; sleep 3; done

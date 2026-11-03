@@ -27,6 +27,22 @@ docker compose up --build   # MLflow on :5000, API on :8000 (after dvc repro/pul
 ```
 Full training needs a GPU or lots of patience; run `dvc repro` on Colab/GPU box, then `dvc push`.
 
+## Serving model (v5)
+The API serves the model described in `models/model_meta.json`:
+
+| | |
+|---|---|
+| Model | `models/mobilenetv2.keras` (MobileNetV2, Keras 3, from `AgroScan-v5/models/` in Drive) |
+| Classes | `models/class_names.json` (8 classes, alphabetical = output order) |
+| Input | RGB, centre square crop, bilinear resize to 288x288, raw 0-255 float32 (the model rescales internally) |
+| Output | softmax over 8 classes; top 3 returned, "not sure" below 0.7 confidence |
+
+Reported by the model's trainer (not re-measured here): PlantDoc test (72 images) 62.5% top-1 / 94.4% top-3;
+PlantWild test (304 images) 60.9% / 88.5%.
+
+To use a model from `src/train.py` instead, delete `models/model_meta.json`; the API then loads
+`models/model.keras` + `models/classes.json` with [0, 1] input.
+
 ## Design notes
 - **Preprocessing contract** (`src/preprocess.py`): used by training *and* the API → RGB, resize, [0,1]. The model
   rescales to [-1,1] internally, removing train/serve skew.

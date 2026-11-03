@@ -1,4 +1,9 @@
-"""AgroScan inference API."""
+"""AgroScan inference API.
+
+The model and its preprocessing are described by models/model_meta.json (file names, input size,
+pixel range, centre crop, confidence threshold). Without that file the API falls back to
+models/model.keras + models/classes.json from the repo's own training pipeline.
+"""
 import json
 import logging
 import os
@@ -12,37 +17,65 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from src.preprocess import decode_and_resize
+from src.preprocess import prepare_for_model
 
 log = logging.getLogger("agroscan")
 logging.basicConfig(level=logging.INFO)
 
-MODEL_PATH = os.getenv("MODEL_PATH", "models/model.keras")
-LEGACY_MODEL_PATH = "models/mobilenetv2_combined_v2.h5"
+MODEL_DIR = Path(os.getenv("MODEL_DIR", "models"))
 PRED_LOG = os.getenv("PREDICTION_LOG", "logs/predictions.jsonl")
 MAX_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", 10 * 1024 * 1024))
-LEGACY_CLASSES = [
-    "Pepper__bell___Bacterial_spot", "Potato___Early_blight", "Potato___Late_blight",
-    "Tomato_Bacterial_spot", "Tomato_Early_blight", "Tomato_Late_blight",
-    "Tomato_Septoria_leaf_spot", "Tomato_healthy",
-]
 
-state = {"model": None, "classes": LEGACY_CLASSES, "img_size": 224, "model_path": None, "version": None}
+state = {"model": None, "classes": None, "cfg": None}
+
+
+def read_class_names(path):
+    data = json.loads(Path(path).read_text())
+    if isinstance(data, dict):
+        for key in ("classes", "class_names"):
+            if key in data:
+                return list(data[key])
+        return [data[k] for k in sorted(data, key=int)]  # {"0": "...", "1": "..."}
+    return list(data)
+
+
+def load_config():
+    meta = MODEL_DIR / "model_meta.json"
+    if meta.exists():
+        cfg = json.loads(meta.read_text())
+        cfg["model_path"] = MODEL_DIR / cfg["model_file"]
+        cfg["classes_path"] = MODEL_DIR / cfg["class_names_file"]
+        return cfg
+    # fallback: model trained by src/train.py ([0, 1] input, size stored in classes.json)
+    cfg = {"version": None, "model_path": MODEL_DIR / "model.keras", "classes_path": MODEL_DIR / "classes.json",
+           "img_size": 224, "input_range": "0_1", "center_crop": False, "confidence_threshold": 0.6, "top_k": 3,
+           "low_confidence_message": "Low confidence. Try a closer, well-lit photo of a single leaf."}
+    if cfg["classes_path"].exists():
+        extra = json.loads(cfg["classes_path"].read_text())
+        if isinstance(extra, dict):
+            cfg["img_size"] = extra.get("img_size", 224)
+            cfg["version"] = extra.get("mlflow_run_id")
+    return cfg
 
 
 def load_state():
-    path = Path(MODEL_PATH)
-    if not path.exists() and Path(LEGACY_MODEL_PATH).exists():
-        path = Path(LEGACY_MODEL_PATH)
-    if not path.exists():
-        log.error("No model found at %s (run `dvc pull` / train first)", MODEL_PATH)
+    cfg = load_config()
+    state["cfg"] = cfg
+    if not cfg["model_path"].exists():
+        log.error("Model file not found: %s", cfg["model_path"])
         return
-    meta_file = path.with_name("classes.json")
-    if meta_file.exists():
-        meta = json.loads(meta_file.read_text())
-        state.update(classes=meta["classes"], img_size=meta.get("img_size", 224), version=meta.get("mlflow_run_id"))
-    state.update(model=keras.models.load_model(path, compile=False), model_path=str(path))
-    log.info("Loaded %s (%d classes)", path, len(state["classes"]))
+    if not cfg["classes_path"].exists():
+        log.error("Class names file not found: %s", cfg["classes_path"])
+        return
+    model = keras.models.load_model(cfg["model_path"], compile=False)
+    classes = read_class_names(cfg["classes_path"])
+    n_out = model.output_shape[-1]
+    if n_out != len(classes):
+        log.error("Model has %d outputs but %d class names; not serving", n_out, len(classes))
+        return
+    state.update(model=model, classes=classes)
+    log.info("Loaded %s (%d classes, %dpx, input %s, centre crop %s)", cfg["model_path"], len(classes),
+             cfg["img_size"], cfg["input_range"], cfg["center_crop"])
 
 
 @asynccontextmanager
@@ -68,34 +101,49 @@ def health():
 def ready():
     if state["model"] is None:
         raise HTTPException(503, "model not loaded")
-    return {"status": "ready", "model_path": state["model_path"], "model_version": state["version"]}
+    cfg = state["cfg"]
+    return {"status": "ready", "model_path": str(cfg["model_path"]), "model_version": cfg["version"],
+            "classes": state["classes"], "img_size": cfg["img_size"],
+            "confidence_threshold": cfg["confidence_threshold"]}
 
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     if state["model"] is None:
         raise HTTPException(503, "model not loaded")
+    cfg = state["cfg"]
     data = await file.read()
     if not data:
         raise HTTPException(400, "empty file")
     if len(data) > MAX_BYTES:
         raise HTTPException(413, f"file larger than {MAX_BYTES} bytes")
     try:
-        x = decode_and_resize(data, state["img_size"]).numpy()[None]
+        x = prepare_for_model(data, cfg["img_size"], cfg["input_range"], cfg["center_crop"]).numpy()[None]
     except Exception:
         raise HTTPException(400, "could not decode image (use jpg or png)")
 
     t0 = time.perf_counter()
-    probs = state["model"].predict(x, verbose=0)[0]
+    probs = np.asarray(state["model"].predict(x, verbose=0)[0], dtype=np.float64)  # already softmax
     latency_ms = (time.perf_counter() - t0) * 1000
-    idx = int(np.argmax(probs))
-    result = {"predicted_class": state["classes"][idx], "confidence": round(float(probs[idx]), 4)}
+    order = np.argsort(probs)[::-1][: cfg["top_k"]]
+    top = [{"class": state["classes"][i], "confidence": round(float(probs[i]), 4)} for i in order]
+    low = top[0]["confidence"] < cfg["confidence_threshold"]
+    result = {
+        "predicted_class": top[0]["class"],
+        "confidence": top[0]["confidence"],
+        "low_confidence": bool(low),
+        "message": cfg["low_confidence_message"] if low else None,
+        "top_k": top,
+        "model_version": cfg["version"],
+    }
 
     try:  # prediction log feeds drift / quality monitoring
         Path(PRED_LOG).parent.mkdir(parents=True, exist_ok=True)
         with open(PRED_LOG, "a") as f:
             f.write(json.dumps({"ts": time.time(), "filename": file.filename, "latency_ms": round(latency_ms, 1),
-                                "model_version": state["version"], **result}) + "\n")
+                                "model_version": cfg["version"], "predicted_class": result["predicted_class"],
+                                "confidence": result["confidence"], "low_confidence": result["low_confidence"]})
+                    + "\n")
     except OSError:
         log.warning("could not write prediction log")
     return JSONResponse(result)

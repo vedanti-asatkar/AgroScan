@@ -1,4 +1,6 @@
 # Serving dependencies (used by the Docker image)
+# Pin to the same TensorFlow version the model was trained with in Colab
+# (run `import tensorflow as tf; print(tf.__version__)` there).
 tensorflow-cpu==2.21.0
 keras==3.15.1
 fastapi>=0.115

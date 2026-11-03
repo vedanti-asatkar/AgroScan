@@ -1,0 +1,11 @@
+{
+  "version": "agroscan-v5-mobilenetv2",
+  "model_file": "mobilenetv2.keras",
+  "class_names_file": "class_names.json",
+  "img_size": 288,
+  "input_range": "0_255",
+  "center_crop": true,
+  "confidence_threshold": 0.7,
+  "top_k": 3,
+  "low_confidence_message": "Not sure. Take a clearer photo of one leaf."
+}
