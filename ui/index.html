@@ -51,6 +51,10 @@
   .result.bad .bar > div { background: var(--warn); }
   .note { color: var(--muted); font-size: .85rem; }
   .error { color: var(--warn); margin-top: 16px; display: none; }
+  .unsure { display: none; margin-top: 12px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--warn); color: var(--warn); font-weight: 600; }
+  .top { margin: 14px 0 0; padding: 0; list-style: none; }
+  .top li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--border); font-size: .9rem; }
+  .top li span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -73,9 +77,9 @@
       <div class="note" id="plant"></div>
       <div class="bar"><div id="fill"></div></div>
       <div class="note"><span id="pct"></span> confidence</div>
-      <div class="note" id="lowconf" style="display:none;margin-top:8px">
-        Low confidence — try a closer, well-lit photo of a single leaf.
-      </div>
+      <div class="unsure" id="lowconf"></div>
+      <div class="label" style="margin-top:14px">Top 3 guesses</div>
+      <ul class="top" id="top"></ul>
     </div>
   </div>
   <p class="note" style="margin-top:16px">Supports pepper, potato and tomato leaves.</p>
@@ -115,16 +119,21 @@ go.onclick = async () => {
   try {
     const body = new FormData();
     body.append('file', file);
-    let predicted_class, confidence;
+    let r;
     if (location.protocol === 'file:') {
       // Demo mode: page opened directly, no API available
-      await new Promise(r => setTimeout(r, 600));
-      ({ predicted_class, confidence } = { predicted_class: 'Tomato_Late_blight', confidence: 0.9231 });
+      await new Promise(res => setTimeout(res, 600));
+      r = { predicted_class: 'Tomato_Late_blight', confidence: 0.6231, low_confidence: true,
+            message: 'Not sure. Take a clearer photo of one leaf.',
+            top_k: [{ class: 'Tomato_Late_blight', confidence: 0.6231 },
+                    { class: 'Tomato_Early_blight', confidence: 0.2105 },
+                    { class: 'Potato___Late_blight', confidence: 0.0904 }] };
     } else {
       const res = await fetch('/predict', { method: 'POST', body });
       if (!res.ok) throw new Error('Server returned ' + res.status);
-      ({ predicted_class, confidence } = await res.json());
+      r = await res.json();
     }
+    const { predicted_class, confidence } = r;
     const { plant, cond } = parse(predicted_class);
     const healthy = /healthy/i.test(cond);
     $('result').className = 'result ' + (healthy ? 'ok' : 'bad');
@@ -133,7 +142,21 @@ go.onclick = async () => {
     $('plant').textContent = plant + ' leaf';
     $('pct').textContent = (confidence * 100).toFixed(1) + '%';
     $('fill').style.width = (confidence * 100) + '%';
-    $('lowconf').style.display = confidence < 0.6 ? 'block' : 'none';
+    const low = r.low_confidence ?? confidence < 0.7;
+    $('lowconf').textContent = r.message || 'Not sure. Take a clearer photo of one leaf.';
+    $('lowconf').style.display = low ? 'block' : 'none';
+    if (low) {
+      $('status').textContent = 'Not sure';
+      $('result').className = 'result bad';
+    }
+    $('top').replaceChildren(...(r.top_k || [{ class: predicted_class, confidence }]).map(t => {
+      const p = parse(t.class), li = document.createElement('li');
+      const name = document.createElement('span'), pct = document.createElement('span');
+      name.textContent = p.plant + ': ' + p.cond;
+      pct.textContent = (t.confidence * 100).toFixed(1) + '%';
+      li.append(name, pct);
+      return li;
+    }));
   } catch (e) {
     $('error').textContent = 'Could not analyze image: ' + e.message;
     $('error').style.display = 'block';
