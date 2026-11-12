@@ -6,7 +6,6 @@
 Manifests reference files in place; no image copies are made.
 """
 import hashlib
-import os
 from collections import Counter
 from pathlib import Path
 
@@ -15,8 +14,8 @@ from sklearn.model_selection import train_test_split
 from src.common import list_images, load_params, parse_args, write_json, write_manifest
 
 
-def md5(path):
-    h = hashlib.md5()
+def sha256(path):
+    h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
@@ -35,6 +34,25 @@ def collect_plantdoc(root, split, name_map):
     return out
 
 
+def deduplicate_pool(rows, test_hashes):
+    by_hash = {}
+    for row in rows:
+        by_hash.setdefault(sha256(row[0]), []).append(row)
+
+    pool = []
+    removed = {"leaked_duplicates_removed": 0, "same_label_duplicates_removed": 0,
+               "conflicting_label_images_removed": 0}
+    for digest, matches in by_hash.items():
+        if digest in test_hashes:
+            removed["leaked_duplicates_removed"] += len(matches)
+        elif len({row[1] for row in matches}) > 1:
+            removed["conflicting_label_images_removed"] += len(matches)
+        else:
+            pool.append(matches[0])
+            removed["same_label_duplicates_removed"] += len(matches) - 1
+    return pool, removed
+
+
 def main(params):
     d = params["data"]
     classes = params["classes"]
@@ -44,15 +62,9 @@ def main(params):
     if not (pv and test):
         raise SystemExit(f"No images found (plantvillage={len(pv)}, plantdoc test={len(test)}). Run `dvc pull`?")
 
-    # leakage guard: hash only files whose size matches some test file
-    test_sizes = {os.path.getsize(p) for p, _, _ in test}
-    test_hashes = {md5(p) for p, _, _ in test}
-    pool, removed = [], 0
-    for row in pv + pd_train:
-        if os.path.getsize(row[0]) in test_sizes and md5(row[0]) in test_hashes:
-            removed += 1
-        else:
-            pool.append(row)
+    # Exact-content leakage guard across all sources and splits.
+    test_hashes = {sha256(path) for path, _, _ in test}
+    pool, removed = deduplicate_pool(pv + pd_train, test_hashes)
 
     labels = [r[1] for r in pool]
     train, val = train_test_split(pool, test_size=d["val_fraction"], stratify=labels, random_state=d["seed"])
@@ -63,14 +75,17 @@ def main(params):
     write_json({"classes": classes}, out / "classes.json")
     write_json(
         {
-            "leaked_duplicates_removed": removed,
+            **removed,
             "counts": {n: dict(Counter(r[1] for r in rows)) for n, rows in
                        (("train", train), ("val", val), ("test", test))},
             "sizes": {"train": len(train), "val": len(val), "test": len(test)},
         },
         out / "stats.json",
     )
-    print(f"train={len(train)} val={len(val)} test={len(test)} leaked_removed={removed}")
+    print(f"train={len(train)} val={len(val)} test={len(test)} "
+          f"leaked_removed={removed['leaked_duplicates_removed']} "
+          f"duplicates_removed={removed['same_label_duplicates_removed']} "
+          f"conflicts_removed={removed['conflicting_label_images_removed']}")
 
 
 if __name__ == "__main__":

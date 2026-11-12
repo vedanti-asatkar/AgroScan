@@ -1,0 +1,337 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python -m src.prepare_data
+    deps:
+    - path: data/plantdoc
+      hash: md5
+      md5: 588992cfbce5a94a4c7bab5e1d5548d2.dir
+      size: 962793405
+      nfiles: 2504
+    - path: data/plantvillage
+      hash: md5
+      md5: f7b7a54b9d360842c6a6e1383ae912ce.dir
+      size: 684461446
+      nfiles: 41278
+    - path: src/common.py
+      hash: md5
+      md5: b211c82390353da873fe1f6d37db8e7e
+      size: 1176
+    - path: src/prepare_data.py
+      hash: md5
+      md5: b3580e5fe049b5442c95271aaed90930
+      size: 3684
+    params:
+      params.yaml:
+        classes:
+        - Pepper__bell___Bacterial_spot
+        - Potato___Early_blight
+        - Potato___Late_blight
+        - Tomato_Bacterial_spot
+        - Tomato_Early_blight
+        - Tomato_Late_blight
+        - Tomato_Septoria_leaf_spot
+        - Tomato_healthy
+        data:
+          plantvillage_dir: data/plantvillage
+          plantdoc_dir: data/plantdoc
+          prepared_dir: data/prepared
+          val_fraction: 0.15
+          seed: 42
+          plantdoc_oversample: 5
+        plantdoc_name_map:
+          Bell_pepper leaf spot: Pepper__bell___Bacterial_spot
+          Potato leaf early blight: Potato___Early_blight
+          Potato leaf late blight: Potato___Late_blight
+          Tomato leaf bacterial spot: Tomato_Bacterial_spot
+          Tomato Early blight leaf: Tomato_Early_blight
+          Tomato leaf late blight: Tomato_Late_blight
+          Tomato Septoria leaf spot: Tomato_Septoria_leaf_spot
+          Tomato leaf: Tomato_healthy
+    outs:
+    - path: data/prepared
+      hash: md5
+      md5: 7ede3b212c6b605ddb9eeae9ee6161cc.dir
+      size: 1888292
+      nfiles: 5
+  validate:
+    cmd: python -m src.validate_data
+    deps:
+    - path: data/prepared
+      hash: md5
+      md5: 7ede3b212c6b605ddb9eeae9ee6161cc.dir
+      size: 1888292
+      nfiles: 5
+    - path: src/common.py
+      hash: md5
+      md5: b211c82390353da873fe1f6d37db8e7e
+      size: 1176
+    - path: src/validate_data.py
+      hash: md5
+      md5: 2223147b179ef440b3d185f4366ffd1d
+      size: 3415
+    params:
+      params.yaml:
+        classes:
+        - Pepper__bell___Bacterial_spot
+        - Potato___Early_blight
+        - Potato___Late_blight
+        - Tomato_Bacterial_spot
+        - Tomato_Early_blight
+        - Tomato_Late_blight
+        - Tomato_Septoria_leaf_spot
+        - Tomato_healthy
+        data.prepared_dir: data/prepared
+        validation:
+          min_width: 16
+          min_height: 16
+    outs:
+    - path: reports/data_validation.json
+      hash: md5
+      md5: 4eea09e4162eb09c24e3a49824f5e513
+      size: 1085
+  train:
+    cmd: python -m src.train
+    deps:
+    - path: data/prepared
+      hash: md5
+      md5: 7ede3b212c6b605ddb9eeae9ee6161cc.dir
+      size: 1888292
+      nfiles: 5
+    - path: reports/data_validation.json
+      hash: md5
+      md5: 4eea09e4162eb09c24e3a49824f5e513
+      size: 1085
+    - path: src/common.py
+      hash: md5
+      md5: b211c82390353da873fe1f6d37db8e7e
+      size: 1176
+    - path: src/preprocess.py
+      hash: md5
+      md5: 6bac8c9789e7ea93ca2e9c2e6839d0d4
+      size: 1424
+    - path: src/train.py
+      hash: md5
+      md5: e6e6eedc5757dd06588e18920fa1bcf7
+      size: 6703
+    params:
+      params.yaml:
+        data.plantdoc_oversample: 5
+        mlflow:
+          tracking_uri: sqlite:///mlflow.db
+          experiment: agroscan
+          registered_model: agroscan-mobilenetv2
+        model:
+          img_size: 224
+          alpha: 1.0
+          weights: imagenet
+          dropout: 0.2
+        train:
+          seed: 42
+          batch_size: 32
+          epochs: 8
+          learning_rate: 0.001
+          fine_tune_epochs: 4
+          fine_tune_layers: 30
+          fine_tune_learning_rate: 1e-05
+          early_stopping_patience: 3
+          max_train_images:
+    outs:
+    - path: models/classes.json
+      hash: md5
+      md5: 4f0ba5d26362c6bad39f2246115ba66a
+      size: 518
+    - path: models/model.keras
+      hash: md5
+      md5: 7c7b7a6cab097f3d1441c26f3b91f7a2
+      size: 21985470
+    - path: reports/train_metrics.json
+      hash: md5
+      md5: d0bd9169e537db84f1a90ff3493480a9
+      size: 75
+  evaluate:
+    cmd: python -m src.evaluate
+    deps:
+    - path: data/prepared
+      hash: md5
+      md5: 7ede3b212c6b605ddb9eeae9ee6161cc.dir
+      size: 1888292
+      nfiles: 5
+    - path: models/model.keras
+      hash: md5
+      md5: 7c7b7a6cab097f3d1441c26f3b91f7a2
+      size: 21985470
+    - path: src/evaluate.py
+      hash: md5
+      md5: c434d4aed336c2499e76c728be5d945d
+      size: 3411
+    params:
+      params.yaml:
+        evaluate:
+          min_test_accuracy: 0.5
+    outs:
+    - path: reports/classification_report.json
+      hash: md5
+      md5: 3a8f8c5bcfdea93e2c671bf53fd0cfbc
+      size: 3560
+    - path: reports/confusion_matrix.png
+      hash: md5
+      md5: 8aace3ab5ef5cd8ad47dadc8cc4a9841
+      size: 52240
+    - path: reports/metrics.json
+      hash: md5
+      md5: 246854b53c13aa0fd38c783a6ab0f77a
+      size: 359
+  evaluate_v5_baseline:
+    cmd: python -m src.evaluate_v5 --meta models/model_meta.v5.json --manifest
+      data/prepared/test.csv --output reports/v5_plantdoc_metrics.json
+    deps:
+    - path: data/prepared/test.csv
+      hash: md5
+      md5: 6ad8a9094d05c231bb252dfe37c14c58
+      size: 7264
+    - path: models/class_names.json
+      hash: md5
+      md5: e1aa42bdd336c764ab53355cc838f272
+      size: 228
+    - path: models/mobilenetv2.keras
+      hash: md5
+      md5: 9e8051b14c2a988e10f82190663415bc
+      size: 43281641
+    - path: models/model_meta.v5.json
+      hash: md5
+      md5: d84f032d3ae914d66ba1690f170e70e0
+      size: 466
+    - path: src/common.py
+      hash: md5
+      md5: b211c82390353da873fe1f6d37db8e7e
+      size: 1176
+    - path: src/evaluate_v5.py
+      hash: md5
+      md5: 58cb30e136b498b7a73c85ad3d4af2a8
+      size: 2982
+    - path: src/preprocess.py
+      hash: md5
+      md5: 6bac8c9789e7ea93ca2e9c2e6839d0d4
+      size: 1424
+    outs:
+    - path: reports/v5_plantdoc_metrics.json
+      hash: md5
+      md5: 0c7cefe6f324509260571a8ba484f794
+      size: 1847
+  export:
+    cmd: python -m src.export_model
+    deps:
+    - path: models/class_names.json
+      hash: md5
+      md5: e1aa42bdd336c764ab53355cc838f272
+      size: 228
+    - path: models/classes.json
+      hash: md5
+      md5: 4f0ba5d26362c6bad39f2246115ba66a
+      size: 518
+    - path: models/mobilenetv2.keras
+      hash: md5
+      md5: 9e8051b14c2a988e10f82190663415bc
+      size: 43281641
+    - path: models/model.keras
+      hash: md5
+      md5: 7c7b7a6cab097f3d1441c26f3b91f7a2
+      size: 21985470
+    - path: models/model_meta.v5.json
+      hash: md5
+      md5: d84f032d3ae914d66ba1690f170e70e0
+      size: 466
+    - path: reports/metrics.json
+      hash: md5
+      md5: 246854b53c13aa0fd38c783a6ab0f77a
+      size: 359
+    - path: reports/v5_plantdoc_metrics.json
+      hash: md5
+      md5: 0c7cefe6f324509260571a8ba484f794
+      size: 1847
+    - path: src/export_model.py
+      hash: md5
+      md5: f714608a2ce79fcce03492053b7a3e72
+      size: 4604
+    params:
+      params.yaml:
+        deploy:
+          confidence_threshold: 0.6
+          top_k: 3
+        evaluate:
+          min_test_accuracy: 0.5
+        model:
+          img_size: 224
+          alpha: 1.0
+          weights: imagenet
+          dropout: 0.2
+    outs:
+    - path: models/model_meta.json
+      hash: md5
+      md5: 95945f86163668441bb49bac58727a29
+      size: 408
+  drift:
+    cmd: python -m src.drift_check
+    deps:
+    - path: data/prepared
+      hash: md5
+      md5: 7ede3b212c6b605ddb9eeae9ee6161cc.dir
+      size: 1888292
+      nfiles: 5
+    - path: models/model_meta.json
+      hash: md5
+      md5: 95945f86163668441bb49bac58727a29
+      size: 408
+    - path: src/drift_check.py
+      hash: md5
+      md5: ee1e8ab352039f6c7f05dd34f723c9c8
+      size: 2028
+    params:
+      params.yaml:
+        drift:
+          max_per_class: 50
+          alpha: 0.05
+          fail_on_drift: false
+    outs:
+    - path: reports/drift.json
+      hash: md5
+      md5: 5e3c4fad9c6b3e985ec99b260893358d
+      size: 550
+  clean_prepared_archive:
+    cmd: python -m src.clean_prepared_archive --input
+      data/agroscan_prepared_v1.zip --output data/agroscan_prepared_v1_clean.zip
+      --audit reports/prepared_dataset_cleaning.json --classes params.yaml
+    deps:
+    - path: data/agroscan_prepared_v1.zip
+      hash: md5
+      md5: cd6220990aac074acfd2b4b805c6ee26
+      size: 470403825
+    - path: src/clean_prepared_archive.py
+      hash: md5
+      md5: 9c183def8a2317db4f4200d9cc6160c9
+      size: 7704
+    - path: src/common.py
+      hash: md5
+      md5: b211c82390353da873fe1f6d37db8e7e
+      size: 1176
+    params:
+      params.yaml:
+        classes:
+        - Pepper__bell___Bacterial_spot
+        - Potato___Early_blight
+        - Potato___Late_blight
+        - Tomato_Bacterial_spot
+        - Tomato_Early_blight
+        - Tomato_Late_blight
+        - Tomato_Septoria_leaf_spot
+        - Tomato_healthy
+    outs:
+    - path: data/agroscan_prepared_v1_clean.zip
+      hash: md5
+      md5: 2f45cece133cd91be1d322c82ffcd78b
+      size: 459043846
+    - path: reports/prepared_dataset_cleaning.json
+      hash: md5
+      md5: ecaae723bd602a0fa39d0161069171bc
+      size: 53346

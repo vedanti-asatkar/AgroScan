@@ -1,0 +1,25 @@
+{
+  "brightness": {
+    "ks_stat": 0.2783333333333333,
+    "p_value": 0.00011436383809028756,
+    "drift": true
+  },
+  "red_mean": {
+    "ks_stat": 0.3138888888888889,
+    "p_value": 7.842884635870558e-06,
+    "drift": true
+  },
+  "green_mean": {
+    "ks_stat": 0.29555555555555557,
+    "p_value": 3.259382928121125e-05,
+    "drift": true
+  },
+  "blue_mean": {
+    "ks_stat": 0.3972222222222222,
+    "p_value": 3.6891779023405795e-09,
+    "drift": true
+  },
+  "n_reference": 400,
+  "n_incoming": 72,
+  "drift_detected": true
+}

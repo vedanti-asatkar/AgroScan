@@ -1,2 +1,5 @@
 /mobilenetv2_combined_v2.h5
 /mobilenetv2.keras
+/model.keras
+/classes.json
+/model_meta.json

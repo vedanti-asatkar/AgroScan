@@ -1,4 +1,17 @@
 stages:
+  clean_prepared_archive:
+    cmd: python -m src.clean_prepared_archive --input data/agroscan_prepared_v1.zip --output data/agroscan_prepared_v1_clean.zip --audit reports/prepared_dataset_cleaning.json --classes params.yaml
+    deps:
+      - src/clean_prepared_archive.py
+      - src/common.py
+      - data/agroscan_prepared_v1.zip
+    params:
+      - classes
+    outs:
+      - data/agroscan_prepared_v1_clean.zip
+    metrics:
+      - reports/prepared_dataset_cleaning.json:
+          cache: false
   prepare:
     cmd: python -m src.prepare_data
     deps:
@@ -12,6 +25,19 @@ stages:
       - data
     outs:
       - data/prepared
+  validate:
+    cmd: python -m src.validate_data
+    deps:
+      - src/validate_data.py
+      - src/common.py
+      - data/prepared
+    params:
+      - classes
+      - data.prepared_dir
+      - validation
+    outs:
+      - reports/data_validation.json:
+          cache: false
   train:
     cmd: python -m src.train
     deps:
@@ -19,6 +45,7 @@ stages:
       - src/preprocess.py
       - src/common.py
       - data/prepared
+      - reports/data_validation.json
     params:
       - model
       - train
@@ -46,11 +73,42 @@ stages:
           cache: false
       - reports/classification_report.json:
           cache: false
+  evaluate_v5_baseline:
+    cmd: python -m src.evaluate_v5 --meta models/model_meta.v5.json --manifest data/prepared/test.csv --output reports/v5_plantdoc_metrics.json
+    deps:
+      - src/evaluate_v5.py
+      - src/common.py
+      - src/preprocess.py
+      - models/model_meta.v5.json
+      - models/mobilenetv2.keras
+      - models/class_names.json
+      - data/prepared/test.csv
+    metrics:
+      - reports/v5_plantdoc_metrics.json:
+          cache: false
+  export:
+    cmd: python -m src.export_model
+    deps:
+      - src/export_model.py
+      - models/model.keras
+      - models/classes.json
+      - reports/metrics.json
+      - reports/v5_plantdoc_metrics.json
+      - models/model_meta.v5.json
+      - models/mobilenetv2.keras
+      - models/class_names.json
+    params:
+      - model
+      - deploy
+      - evaluate
+    outs:
+      - models/model_meta.json
   drift:
     cmd: python -m src.drift_check
     deps:
       - src/drift_check.py
       - data/prepared
+      - models/model_meta.json
     params:
       - drift
     outs:

@@ -96,6 +96,7 @@ def main(params_path):
     val_ds, n_val = make_dataset(read_manifest(prep / "val.csv"), class_idx, p, False)
 
     mlflow.set_tracking_uri(p["mlflow"]["tracking_uri"])
+    mlflow.set_registry_uri(p["mlflow"]["tracking_uri"])
     mlflow.set_experiment(p["mlflow"]["experiment"])
     with mlflow.start_run(run_name="train") as run:
         mlflow.log_params(dict(flatten(p)))
@@ -129,17 +130,16 @@ def main(params_path):
 
         Path("models").mkdir(exist_ok=True)
         model.save("models/model.keras")
-        write_json({"classes": classes, "img_size": p["model"]["img_size"], "input_range": [0, 1],
-                    "git_sha": git_sha(), "mlflow_run_id": run.info.run_id}, "models/classes.json")
         write_json({"val_accuracy": val_acc, "val_loss": val_loss}, "reports/train_metrics.json")
 
-        mlflow.log_artifact("models/classes.json")
         mlflow.log_artifact(params_path)
-        try:
-            mlflow.keras.log_model(model, name="model", registered_model_name=p["mlflow"]["registered_model"])
-        except Exception as e:  # registry needs a DB-backed tracking store
-            print("model registry skipped:", e)
-            mlflow.log_artifact("models/model.keras")
+        model_info = mlflow.keras.log_model(model, name="model")
+        registered = mlflow.register_model(model_info.model_uri, p["mlflow"]["registered_model"])
+        write_json({"classes": classes, "img_size": p["model"]["img_size"], "input_range": [0, 1],
+                    "git_sha": git_sha(), "mlflow_run_id": run.info.run_id,
+                    "mlflow_model_name": p["mlflow"]["registered_model"],
+                    "mlflow_model_version": str(registered.version)}, "models/classes.json")
+        mlflow.log_artifact("models/classes.json")
         print("run", run.info.run_id, "val_acc", round(val_acc, 4))
 
 

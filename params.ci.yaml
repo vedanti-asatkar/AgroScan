@@ -15,3 +15,5 @@ train: {seed: 1, batch_size: 16, epochs: 6, learning_rate: 0.003, fine_tune_epoc
 evaluate: {min_test_accuracy: 0.0}
 drift: {max_per_class: 10, alpha: 0.05}
 mlflow: {tracking_uri: "sqlite:///.smoke/mlflow.db", experiment: agroscan-smoke, registered_model: agroscan-smoke}
+validation: {min_width: 8, min_height: 8}
+deploy: {confidence_threshold: 0.6, top_k: 3}

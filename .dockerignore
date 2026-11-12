@@ -1,6 +1,7 @@
 .git
 data
 venv
+.venv
 mlruns
 mlartifacts
 mlflow.db

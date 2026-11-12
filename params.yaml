@@ -30,6 +30,14 @@ data:
   # appears to have used 5x; confirm and adjust).
   plantdoc_oversample: 5
 
+validation:
+  min_width: 16
+  min_height: 16
+
+deploy:
+  confidence_threshold: 0.6
+  top_k: 3
+
 model:
   img_size: 224
   alpha: 1.0

@@ -26,8 +26,9 @@ def test_pipeline(tmp_path):
 
     (tmp_path / "reports").mkdir()
     run(str(ROOT / "scripts/make_synthetic_data.py"), str(tmp_path), "--params", str(pf))
-    for mod in ("prepare_data", "train", "evaluate", "drift_check"):
+    for mod in ("prepare_data", "validate_data", "train", "evaluate", "export_model", "drift_check"):
         run("-m", f"src.{mod}", "--params", str(pf))
     metrics = json.loads((tmp_path / "reports/metrics.json").read_text())
     assert metrics["test_accuracy"] > 0.5  # classes are colour-separable
     assert (tmp_path / "models/model.keras").exists()
+    assert json.loads((tmp_path / "models/model_meta.json").read_text())["version"]
