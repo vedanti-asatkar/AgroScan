@@ -39,7 +39,10 @@ def export(params):
         baseline_metrics = json.loads(baseline_metrics_path.read_text())
         baseline_accuracy = float(baseline_metrics["top1_accuracy"])
         if baseline_accuracy < gate:
-            raise SystemExit(f"Candidate ({candidate_accuracy:.4f}) and v5 baseline ({baseline_accuracy:.4f}) both fail the {gate:.4f} quality gate")
+            raise SystemExit(
+                f"Candidate ({candidate_accuracy:.4f}) and v5 baseline "
+                f"({baseline_accuracy:.4f}) both fail the {gate:.4f} quality gate"
+            )
 
         baseline = json.loads(baseline_meta_path.read_text())
         model_path = Path("models") / baseline["model_file"]
@@ -54,7 +57,12 @@ def export(params):
         mlflow_model_name = baseline.get("mlflow_model_name")
         mlflow_model_version = baseline.get("mlflow_model_version")
         version = baseline.get("mlflow_run_id") or baseline.get("version") or "v5-baseline"
-        confidence_threshold = float(baseline.get("confidence_threshold", params.get("deploy", {}).get("confidence_threshold", 0.6)))
+        confidence_threshold = float(
+            baseline.get(
+                "confidence_threshold",
+                params.get("deploy", {}).get("confidence_threshold", 0.6),
+            )
+        )
         top_k = int(baseline.get("top_k", params.get("deploy", {}).get("top_k", 3)))
         low_confidence_message = baseline.get("low_confidence_message", "Not sure. Take a clearer photo of one leaf.")
         selected = "v5_baseline"

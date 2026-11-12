@@ -78,9 +78,14 @@ def load_state():
         log.error("Model has %d outputs but %d class names; not serving", n_out, len(classes))
         return
     class_data = json.loads(Path(cfg["classes_path"]).read_text())
-    state.update(model=model, classes=classes,
-                 registry_model=cfg.get("mlflow_model_name") or (class_data.get("mlflow_model_name") if isinstance(class_data, dict) else None),
-                 registry_version=cfg.get("mlflow_model_version") or (class_data.get("mlflow_model_version") if isinstance(class_data, dict) else None))
+    state.update(
+        model=model,
+        classes=classes,
+        registry_model=cfg.get("mlflow_model_name")
+        or (class_data.get("mlflow_model_name") if isinstance(class_data, dict) else None),
+        registry_version=cfg.get("mlflow_model_version")
+        or (class_data.get("mlflow_model_version") if isinstance(class_data, dict) else None),
+    )
     log.info("Loaded %s (%d classes, %dpx, input %s, centre crop %s)", cfg["model_path"], len(classes),
              cfg["img_size"], cfg["input_range"], cfg["center_crop"])
 

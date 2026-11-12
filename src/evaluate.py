@@ -70,7 +70,10 @@ def main(params_path):
     print(metrics)
     gate = p["evaluate"]["min_test_accuracy"]
     if metrics["test_accuracy"] < gate:
-        print(f"CANDIDATE REJECTED: test_accuracy {metrics['test_accuracy']:.4f} < {gate}; export will check the approved baseline")
+        print(
+            f"CANDIDATE REJECTED: test_accuracy {metrics['test_accuracy']:.4f} < {gate}; "
+            "export will check the approved baseline"
+        )
     else:
         print(f"CANDIDATE PASSED: test_accuracy {metrics['test_accuracy']:.4f} >= {gate}")
 

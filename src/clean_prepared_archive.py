@@ -129,7 +129,11 @@ def clean_archive(input_path, output_path, audit_path, classes):
         "removed_conflicting_label_details": conflict_groups,
         "deduplicated_group_details": duplicate_groups,
         "split_priority": list(SPLIT_PRIORITY),
-        "policy": "Drop every exact-content group with conflicting class labels. For same-label copies, keep one image and prefer test, then validation, then training splits so no duplicate content leaks into a held-out split.",
+        "policy": (
+            "Drop exact-content groups with conflicting class labels. For same-label copies, "
+            "keep one image and prefer test, then validation, then training splits so duplicate "
+            "content does not leak into a held-out split."
+        ),
     }
     write_json(audit, audit_path)
     print(json.dumps({k: audit[k] for k in (
