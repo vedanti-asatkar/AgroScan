@@ -13,9 +13,13 @@ def export(params):
     baseline_metrics_path = Path("reports/v5_plantdoc_metrics.json")
     gate = float(params.get("evaluate", {}).get("min_test_accuracy", 0.0))
 
-    candidate_metrics = json.loads(candidate_metrics_path.read_text()) if candidate_metrics_path.is_file() else None
-    candidate_accuracy = candidate_metrics.get("test_accuracy") if candidate_metrics else None
-    use_candidate = candidate_accuracy is None or float(candidate_accuracy) >= gate
+    if not candidate_metrics_path.is_file():
+        raise SystemExit(f"Missing {candidate_metrics_path}; run the evaluate stage before export")
+    candidate_metrics = json.loads(candidate_metrics_path.read_text())
+    candidate_accuracy = candidate_metrics.get("test_accuracy")
+    if isinstance(candidate_accuracy, bool) or not isinstance(candidate_accuracy, (int, float)):
+        raise SystemExit(f"{candidate_metrics_path} has no numeric test_accuracy; cannot apply the quality gate")
+    use_candidate = float(candidate_accuracy) >= gate
 
     if use_candidate:
         model_path, classes_path = candidate_model, candidate_classes
