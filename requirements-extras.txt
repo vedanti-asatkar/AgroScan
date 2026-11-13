@@ -1,0 +1,11 @@
+# Optional extras for automation and explainability (owned by Person B).
+# Install on top of requirements.txt:  pip install -r requirements-extras.txt
+# Airflow is Linux-only: use WSL2 or Docker (see docs/airflow_setup.md).
+# Airflow officially wants a constraints file; see docs/airflow_setup.md for the command.
+apache-airflow==2.10.5
+shap>=0.45
+lime>=0.2.0.1
+scikit-image>=0.22      # used by LIME's segmentation
+matplotlib>=3.8
+nbformat>=5.9
+nbconvert>=7.0          # lets CI / you run notebooks top to bottom
