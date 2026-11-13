@@ -1,5 +1,6 @@
 import json
 
+import pytest
 from PIL import Image
 
 from src.evaluate_v5 import evaluate as evaluate_v5
@@ -42,6 +43,8 @@ def test_validation_reports_class_counts_and_rejects_cross_split_duplicates(tmp_
 
 
 def test_export_produces_the_api_metadata_contract(tmp_path, monkeypatch):
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports/metrics.json").write_text(json.dumps({"test_accuracy": 0.9}))
     monkeypatch.chdir(tmp_path)
     models = tmp_path / "models"
     models.mkdir()
@@ -53,6 +56,20 @@ def test_export_produces_the_api_metadata_contract(tmp_path, monkeypatch):
                            "center_crop", "confidence_threshold", "top_k", "low_confidence_message"}
     assert result["version"] == "run-123" and result["top_k"] == 2
     assert json.loads((models / "model_meta.json").read_text()) == result
+
+
+def test_export_fails_when_candidate_metrics_file_missing(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(SystemExit, match="metrics"):
+        export({"model": {"img_size": 224}})
+
+
+def test_export_fails_when_test_accuracy_missing(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports/metrics.json").write_text(json.dumps({"val_accuracy": 0.9}))
+    with pytest.raises(SystemExit, match="test_accuracy"):
+        export({"model": {"img_size": 224}})
 
 
 def test_prepare_drops_test_leaks_and_conflicting_labels(tmp_path):
