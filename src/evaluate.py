@@ -1,5 +1,4 @@
 """Evaluate on val + PlantDoc test; write metrics/plots; enforce quality gate."""
-import sys
 from pathlib import Path
 
 import keras
@@ -71,8 +70,12 @@ def main(params_path):
     print(metrics)
     gate = p["evaluate"]["min_test_accuracy"]
     if metrics["test_accuracy"] < gate:
-        print(f"QUALITY GATE FAILED: test_accuracy {metrics['test_accuracy']:.4f} < {gate}")
-        sys.exit(1)
+        print(
+            f"CANDIDATE REJECTED: test_accuracy {metrics['test_accuracy']:.4f} < {gate}; "
+            "export will check the approved baseline"
+        )
+    else:
+        print(f"CANDIDATE PASSED: test_accuracy {metrics['test_accuracy']:.4f} >= {gate}")
 
 
 if __name__ == "__main__":

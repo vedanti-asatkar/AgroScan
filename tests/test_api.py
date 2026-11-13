@@ -1,5 +1,6 @@
 import importlib
 import io
+import json
 
 import numpy as np
 import pytest
@@ -48,7 +49,12 @@ def test_predict(client, jpeg_bytes, tmp_path):
     body = r.json()
     assert body["predicted_class"] in {"a", "b", "c"}
     assert 0 <= body["confidence"] <= 1
-    assert (tmp_path / "pred.jsonl").read_text().count("\n") == 1
+    lines = (tmp_path / "pred.jsonl").read_text().splitlines()
+    assert len(lines) == 1
+    event = json.loads(lines[0])
+    assert set(event) == {"ts", "model_version", "top1_class", "confidence", "top3",
+                          "low_confidence", "latency_ms", "brightness"}
+    assert len(event["top3"]) == 3 and 0 <= event["brightness"] <= 255
 
 
 def test_rejects_non_image(client):

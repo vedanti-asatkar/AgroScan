@@ -1,0 +1,71 @@
+{
+  "model_version": "af8a4d72ce294efdb725b814e7d5c4dd",
+  "dataset": "Prepared archive PlantWild test (cleaned)",
+  "manifest": "C:\\Users\\Vedan\\AppData\\Local\\Temp\\AgroScanPreparedEval\\pw_test_clean.csv",
+  "n_images": 299,
+  "top1_accuracy": 0.3745819397993311,
+  "top3_accuracy": 0.6822742474916388,
+  "classification_report": {
+    "Pepper__bell___Bacterial_spot": {
+      "precision": 0.3548387096774194,
+      "recall": 0.5238095238095238,
+      "f1-score": 0.4230769230769231,
+      "support": 21.0
+    },
+    "Potato___Early_blight": {
+      "precision": 0.6111111111111112,
+      "recall": 0.3793103448275862,
+      "f1-score": 0.46808510638297873,
+      "support": 29.0
+    },
+    "Potato___Late_blight": {
+      "precision": 0.4,
+      "recall": 0.29411764705882354,
+      "f1-score": 0.3389830508474576,
+      "support": 34.0
+    },
+    "Tomato_Bacterial_spot": {
+      "precision": 0.5217391304347826,
+      "recall": 0.2608695652173913,
+      "f1-score": 0.34782608695652173,
+      "support": 46.0
+    },
+    "Tomato_Early_blight": {
+      "precision": 0.30434782608695654,
+      "recall": 0.28,
+      "f1-score": 0.2916666666666667,
+      "support": 50.0
+    },
+    "Tomato_Late_blight": {
+      "precision": 0.28735632183908044,
+      "recall": 0.5208333333333334,
+      "f1-score": 0.37037037037037035,
+      "support": 48.0
+    },
+    "Tomato_Septoria_leaf_spot": {
+      "precision": 0.3225806451612903,
+      "recall": 0.3333333333333333,
+      "f1-score": 0.32786885245901637,
+      "support": 30.0
+    },
+    "Tomato_healthy": {
+      "precision": 0.5,
+      "recall": 0.4634146341463415,
+      "f1-score": 0.4810126582278481,
+      "support": 41.0
+    },
+    "accuracy": 0.3745819397993311,
+    "macro avg": {
+      "precision": 0.41274671803883006,
+      "recall": 0.38196104771579165,
+      "f1-score": 0.38111121437347284,
+      "support": 299.0
+    },
+    "weighted avg": {
+      "precision": 0.40789882686592116,
+      "recall": 0.3745819397993311,
+      "f1-score": 0.37425820358113276,
+      "support": 299.0
+    }
+  }
+}

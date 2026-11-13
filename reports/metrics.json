@@ -1,0 +1,10 @@
+{
+  "val_accuracy": 0.8838495575221239,
+  "val_mean_confidence": 0.917533814907074,
+  "val_confident_wrong_rate": 0.02267699115044248,
+  "val_macro_f1": 0.8706909223019539,
+  "test_accuracy": 0.4444444444444444,
+  "test_mean_confidence": 0.7122827172279358,
+  "test_confident_wrong_rate": 0.09722222222222222,
+  "test_macro_f1": 0.42858239255298075
+}

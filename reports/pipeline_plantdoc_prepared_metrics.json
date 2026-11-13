@@ -1,0 +1,71 @@
+{
+  "model_version": "af8a4d72ce294efdb725b814e7d5c4dd",
+  "dataset": "Prepared archive PlantDoc test (cleaned)",
+  "manifest": "C:\\Users\\Vedan\\AppData\\Local\\Temp\\AgroScanPreparedEval\\pd_test_clean.csv",
+  "n_images": 70,
+  "top1_accuracy": 0.42857142857142855,
+  "top3_accuracy": 0.7857142857142857,
+  "classification_report": {
+    "Pepper__bell___Bacterial_spot": {
+      "precision": 0.6,
+      "recall": 1.0,
+      "f1-score": 0.75,
+      "support": 9.0
+    },
+    "Potato___Early_blight": {
+      "precision": 0.42857142857142855,
+      "recall": 0.375,
+      "f1-score": 0.4,
+      "support": 8.0
+    },
+    "Potato___Late_blight": {
+      "precision": 0.25,
+      "recall": 0.125,
+      "f1-score": 0.16666666666666666,
+      "support": 8.0
+    },
+    "Tomato_Bacterial_spot": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 8.0
+    },
+    "Tomato_Early_blight": {
+      "precision": 0.6,
+      "recall": 0.375,
+      "f1-score": 0.46153846153846156,
+      "support": 8.0
+    },
+    "Tomato_Late_blight": {
+      "precision": 0.3157894736842105,
+      "recall": 0.6,
+      "f1-score": 0.41379310344827586,
+      "support": 10.0
+    },
+    "Tomato_Septoria_leaf_spot": {
+      "precision": 0.6666666666666666,
+      "recall": 0.36363636363636365,
+      "f1-score": 0.47058823529411764,
+      "support": 11.0
+    },
+    "Tomato_healthy": {
+      "precision": 0.4444444444444444,
+      "recall": 0.5,
+      "f1-score": 0.47058823529411764,
+      "support": 8.0
+    },
+    "accuracy": 0.42857142857142855,
+    "macro avg": {
+      "precision": 0.4131840016708438,
+      "recall": 0.4173295454545455,
+      "f1-score": 0.3916468377802049,
+      "support": 70.0
+    },
+    "weighted avg": {
+      "precision": 0.42393364363289177,
+      "recall": 0.42857142857142855,
+      "f1-score": 0.40078212186731454,
+      "support": 70.0
+    }
+  }
+}

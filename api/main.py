@@ -4,6 +4,7 @@ The model and its preprocessing are described by models/model_meta.json (file na
 pixel range, centre crop, confidence threshold). Without that file the API falls back to
 models/model.keras + models/classes.json from the repo's own training pipeline.
 """
+import io
 import json
 import logging
 import os
@@ -16,6 +17,7 @@ import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from PIL import Image
 
 from src.preprocess import prepare_for_model
 
@@ -26,7 +28,7 @@ MODEL_DIR = Path(os.getenv("MODEL_DIR", "models"))
 PRED_LOG = os.getenv("PREDICTION_LOG", "logs/predictions.jsonl")
 MAX_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", 10 * 1024 * 1024))
 
-state = {"model": None, "classes": None, "cfg": None}
+state = {"model": None, "classes": None, "cfg": None, "registry_model": None, "registry_version": None}
 
 
 def read_class_names(path):
@@ -41,6 +43,8 @@ def read_class_names(path):
 
 def load_config():
     meta = MODEL_DIR / "model_meta.json"
+    if not meta.exists():
+        meta = MODEL_DIR / "model_meta.v5.json"
     if meta.exists():
         cfg = json.loads(meta.read_text())
         cfg["model_path"] = MODEL_DIR / cfg["model_file"]
@@ -73,7 +77,15 @@ def load_state():
     if n_out != len(classes):
         log.error("Model has %d outputs but %d class names; not serving", n_out, len(classes))
         return
-    state.update(model=model, classes=classes)
+    class_data = json.loads(Path(cfg["classes_path"]).read_text())
+    state.update(
+        model=model,
+        classes=classes,
+        registry_model=cfg.get("mlflow_model_name")
+        or (class_data.get("mlflow_model_name") if isinstance(class_data, dict) else None),
+        registry_version=cfg.get("mlflow_model_version")
+        or (class_data.get("mlflow_model_version") if isinstance(class_data, dict) else None),
+    )
     log.info("Loaded %s (%d classes, %dpx, input %s, centre crop %s)", cfg["model_path"], len(classes),
              cfg["img_size"], cfg["input_range"], cfg["center_crop"])
 
@@ -104,7 +116,8 @@ def ready():
     cfg = state["cfg"]
     return {"status": "ready", "model_path": str(cfg["model_path"]), "model_version": cfg["version"],
             "classes": state["classes"], "img_size": cfg["img_size"],
-            "confidence_threshold": cfg["confidence_threshold"]}
+            "confidence_threshold": cfg["confidence_threshold"], "mlflow_model_name": state["registry_model"],
+            "mlflow_model_version": state["registry_version"]}
 
 
 @app.post("/predict")
@@ -118,6 +131,8 @@ async def predict(file: UploadFile = File(...)):
     if len(data) > MAX_BYTES:
         raise HTTPException(413, f"file larger than {MAX_BYTES} bytes")
     try:
+        with Image.open(io.BytesIO(data)) as image:
+            brightness = float(np.asarray(image.convert("RGB"), dtype=np.float32).mean())
         x = prepare_for_model(data, cfg["img_size"], cfg["input_range"], cfg["center_crop"]).numpy()[None]
     except Exception:
         raise HTTPException(400, "could not decode image (use jpg or png)")
@@ -140,9 +155,10 @@ async def predict(file: UploadFile = File(...)):
     try:  # prediction log feeds drift / quality monitoring
         Path(PRED_LOG).parent.mkdir(parents=True, exist_ok=True)
         with open(PRED_LOG, "a") as f:
-            f.write(json.dumps({"ts": time.time(), "filename": file.filename, "latency_ms": round(latency_ms, 1),
-                                "model_version": cfg["version"], "predicted_class": result["predicted_class"],
-                                "confidence": result["confidence"], "low_confidence": result["low_confidence"]})
+            f.write(json.dumps({"ts": time.time(), "model_version": cfg["version"],
+                                "top1_class": result["predicted_class"], "confidence": result["confidence"],
+                                "top3": result["top_k"], "low_confidence": result["low_confidence"],
+                                "latency_ms": round(latency_ms, 1), "brightness": round(brightness, 2)})
                     + "\n")
     except OSError:
         log.warning("could not write prediction log")

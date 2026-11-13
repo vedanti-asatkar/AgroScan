@@ -1,0 +1,1739 @@
+{
+  "source_archive": "agroscan_prepared_v1.zip",
+  "source_archive_sha256": "c4559a4eb1159b92c928be7fcd8a877aeb7b00fbc4ab6f12eed6d0a6f2c0af5f",
+  "clean_archive": "agroscan_prepared_v1_clean.zip",
+  "clean_archive_sha256": "040d441db6f8a7cfc880d1fa39bffe4b00ef68c7a3ece7378b4c53cedd119059",
+  "classes": [
+    "Pepper__bell___Bacterial_spot",
+    "Potato___Early_blight",
+    "Potato___Late_blight",
+    "Tomato_Bacterial_spot",
+    "Tomato_Early_blight",
+    "Tomato_Late_blight",
+    "Tomato_Septoria_leaf_spot",
+    "Tomato_healthy"
+  ],
+  "original_counts": {
+    "pd_test": {
+      "total": 72,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 9,
+        "Potato___Early_blight": 8,
+        "Potato___Late_blight": 8,
+        "Tomato_Bacterial_spot": 9,
+        "Tomato_Early_blight": 9,
+        "Tomato_Late_blight": 10,
+        "Tomato_Septoria_leaf_spot": 11,
+        "Tomato_healthy": 8
+      }
+    },
+    "pd_train": {
+      "total": 587,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 50,
+        "Potato___Early_blight": 85,
+        "Potato___Late_blight": 76,
+        "Tomato_Bacterial_spot": 80,
+        "Tomato_Early_blight": 62,
+        "Tomato_Late_blight": 80,
+        "Tomato_Septoria_leaf_spot": 110,
+        "Tomato_healthy": 44
+      }
+    },
+    "pd_val": {
+      "total": 147,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 12,
+        "Potato___Early_blight": 21,
+        "Potato___Late_blight": 19,
+        "Tomato_Bacterial_spot": 20,
+        "Tomato_Early_blight": 16,
+        "Tomato_Late_blight": 20,
+        "Tomato_Septoria_leaf_spot": 28,
+        "Tomato_healthy": 11
+      }
+    },
+    "pv_train": {
+      "total": 9748,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 857,
+        "Potato___Early_blight": 860,
+        "Potato___Late_blight": 860,
+        "Tomato_Bacterial_spot": 1820,
+        "Tomato_Early_blight": 860,
+        "Tomato_Late_blight": 1629,
+        "Tomato_Septoria_leaf_spot": 1511,
+        "Tomato_healthy": 1351
+      }
+    },
+    "pv_val": {
+      "total": 1647,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 140,
+        "Potato___Early_blight": 140,
+        "Potato___Late_blight": 140,
+        "Tomato_Bacterial_spot": 307,
+        "Tomato_Early_blight": 140,
+        "Tomato_Late_blight": 280,
+        "Tomato_Septoria_leaf_spot": 260,
+        "Tomato_healthy": 240
+      }
+    },
+    "pw_test": {
+      "total": 304,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 21,
+        "Potato___Early_blight": 29,
+        "Potato___Late_blight": 36,
+        "Tomato_Bacterial_spot": 46,
+        "Tomato_Early_blight": 52,
+        "Tomato_Late_blight": 49,
+        "Tomato_Septoria_leaf_spot": 30,
+        "Tomato_healthy": 41
+      }
+    },
+    "pw_train": {
+      "total": 1228,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 80,
+        "Potato___Early_blight": 124,
+        "Potato___Late_blight": 128,
+        "Tomato_Bacterial_spot": 188,
+        "Tomato_Early_blight": 226,
+        "Tomato_Late_blight": 192,
+        "Tomato_Septoria_leaf_spot": 132,
+        "Tomato_healthy": 158
+      }
+    },
+    "pw_val": {
+      "total": 146,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 10,
+        "Potato___Early_blight": 14,
+        "Potato___Late_blight": 12,
+        "Tomato_Bacterial_spot": 22,
+        "Tomato_Early_blight": 29,
+        "Tomato_Late_blight": 24,
+        "Tomato_Septoria_leaf_spot": 13,
+        "Tomato_healthy": 22
+      }
+    }
+  },
+  "clean_counts": {
+    "pd_test": {
+      "total": 71,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 9,
+        "Potato___Early_blight": 8,
+        "Potato___Late_blight": 8,
+        "Tomato_Bacterial_spot": 8,
+        "Tomato_Early_blight": 9,
+        "Tomato_Late_blight": 10,
+        "Tomato_Septoria_leaf_spot": 11,
+        "Tomato_healthy": 8
+      }
+    },
+    "pd_train": {
+      "total": 575,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 50,
+        "Potato___Early_blight": 78,
+        "Potato___Late_blight": 76,
+        "Tomato_Bacterial_spot": 80,
+        "Tomato_Early_blight": 60,
+        "Tomato_Late_blight": 79,
+        "Tomato_Septoria_leaf_spot": 108,
+        "Tomato_healthy": 44
+      }
+    },
+    "pd_val": {
+      "total": 147,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 12,
+        "Potato___Early_blight": 21,
+        "Potato___Late_blight": 19,
+        "Tomato_Bacterial_spot": 20,
+        "Tomato_Early_blight": 16,
+        "Tomato_Late_blight": 20,
+        "Tomato_Septoria_leaf_spot": 28,
+        "Tomato_healthy": 11
+      }
+    },
+    "pv_train": {
+      "total": 9734,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 857,
+        "Potato___Early_blight": 860,
+        "Potato___Late_blight": 860,
+        "Tomato_Bacterial_spot": 1820,
+        "Tomato_Early_blight": 860,
+        "Tomato_Late_blight": 1621,
+        "Tomato_Septoria_leaf_spot": 1511,
+        "Tomato_healthy": 1345
+      }
+    },
+    "pv_val": {
+      "total": 1647,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 140,
+        "Potato___Early_blight": 140,
+        "Potato___Late_blight": 140,
+        "Tomato_Bacterial_spot": 307,
+        "Tomato_Early_blight": 140,
+        "Tomato_Late_blight": 280,
+        "Tomato_Septoria_leaf_spot": 260,
+        "Tomato_healthy": 240
+      }
+    },
+    "pw_test": {
+      "total": 299,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 21,
+        "Potato___Early_blight": 29,
+        "Potato___Late_blight": 34,
+        "Tomato_Bacterial_spot": 46,
+        "Tomato_Early_blight": 50,
+        "Tomato_Late_blight": 48,
+        "Tomato_Septoria_leaf_spot": 30,
+        "Tomato_healthy": 41
+      }
+    },
+    "pw_train": {
+      "total": 1121,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 78,
+        "Potato___Early_blight": 101,
+        "Potato___Late_blight": 112,
+        "Tomato_Bacterial_spot": 175,
+        "Tomato_Early_blight": 201,
+        "Tomato_Late_blight": 182,
+        "Tomato_Septoria_leaf_spot": 116,
+        "Tomato_healthy": 156
+      }
+    },
+    "pw_val": {
+      "total": 142,
+      "by_class": {
+        "Pepper__bell___Bacterial_spot": 10,
+        "Potato___Early_blight": 12,
+        "Potato___Late_blight": 12,
+        "Tomato_Bacterial_spot": 22,
+        "Tomato_Early_blight": 29,
+        "Tomato_Late_blight": 23,
+        "Tomato_Septoria_leaf_spot": 12,
+        "Tomato_healthy": 22
+      }
+    }
+  },
+  "conflicting_label_groups_removed": 42,
+  "conflicting_label_images_removed": 90,
+  "exact_duplicate_groups_deduplicated": 53,
+  "exact_duplicate_copies_removed": 53,
+  "removed_counts_by_split": {
+    "pd_test": {
+      "Tomato_Bacterial_spot": 1
+    },
+    "pd_train": {
+      "Potato___Early_blight": 7,
+      "Tomato_Early_blight": 2,
+      "Tomato_Late_blight": 1,
+      "Tomato_Septoria_leaf_spot": 2
+    },
+    "pd_val": {},
+    "pv_train": {
+      "Tomato_Late_blight": 8,
+      "Tomato_healthy": 6
+    },
+    "pv_val": {},
+    "pw_test": {
+      "Potato___Late_blight": 2,
+      "Tomato_Early_blight": 2,
+      "Tomato_Late_blight": 1
+    },
+    "pw_train": {
+      "Pepper__bell___Bacterial_spot": 2,
+      "Potato___Early_blight": 23,
+      "Potato___Late_blight": 16,
+      "Tomato_Bacterial_spot": 13,
+      "Tomato_Early_blight": 25,
+      "Tomato_Late_blight": 10,
+      "Tomato_Septoria_leaf_spot": 16,
+      "Tomato_healthy": 2
+    },
+    "pw_val": {
+      "Potato___Early_blight": 2,
+      "Tomato_Late_blight": 1,
+      "Tomato_Septoria_leaf_spot": 1
+    }
+  },
+  "removed_conflicting_label_details": [
+    {
+      "sha256": "a04ef71664c94acc127f8ecaf445dfefa9d90e0d99c7f314b2b20b5ea96ed9c4",
+      "files": [
+        {
+          "split": "pw_test",
+          "label": "Potato___Late_blight",
+          "path": "pw_test/Potato___Late_blight/pw_test_00051.jpg"
+        },
+        {
+          "split": "pw_val",
+          "label": "Potato___Early_blight",
+          "path": "pw_val/Potato___Early_blight/pw_val_00012.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "cb9c6443abdc165887bb822c58bec2551c2ddaaef2ba249332e8c99facc3a00f",
+      "files": [
+        {
+          "split": "pw_test",
+          "label": "Potato___Late_blight",
+          "path": "pw_test/Potato___Late_blight/pw_test_00070.jpg"
+        },
+        {
+          "split": "pw_test",
+          "label": "Tomato_Late_blight",
+          "path": "pw_test/Tomato_Late_blight/pw_test_00224.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "91dbb2247894e88e0c546f5c10d4e18a18db52887f445856091818fc4395ef3a",
+      "files": [
+        {
+          "split": "pw_test",
+          "label": "Tomato_Early_blight",
+          "path": "pw_test/Tomato_Early_blight/pw_test_00156.jpg"
+        },
+        {
+          "split": "pw_val",
+          "label": "Potato___Early_blight",
+          "path": "pw_val/Potato___Early_blight/pw_val_00015.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "b06cc5f3c4774370faec6d0f601b3fba59460115201fa44492d5ba74766a403d",
+      "files": [
+        {
+          "split": "pw_val",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_val/Tomato_Septoria_leaf_spot/pw_val_00120.jpg"
+        },
+        {
+          "split": "pd_test",
+          "label": "Tomato_Bacterial_spot",
+          "path": "pd_test/Tomato_Bacterial_spot/pd_test_00032.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "44a388782c7c4ec8ebd9a15fc2b67c85a1f9338ace9b2ff577a719c58742ad3c",
+      "files": [
+        {
+          "split": "pd_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pd_train/Tomato_Septoria_leaf_spot/pd_train_00448.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Bacterial_spot",
+          "path": "pw_train/Tomato_Bacterial_spot/pw_train_00502.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "d7a8efc47ef70cacc206b79e3aa937181007c9af8650871613aebd3f3585eaf5",
+      "files": [
+        {
+          "split": "pd_train",
+          "label": "Tomato_Early_blight",
+          "path": "pd_train/Tomato_Early_blight/pd_train_00307.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_01030.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "2680a767759c30a3dadbc86b321f02421449e5ae3dfe59dc23a4e771bb1a783f",
+      "files": [
+        {
+          "split": "pd_train",
+          "label": "Tomato_Early_blight",
+          "path": "pd_train/Tomato_Early_blight/pd_train_00313.jpg"
+        },
+        {
+          "split": "pd_train",
+          "label": "Potato___Early_blight",
+          "path": "pd_train/Potato___Early_blight/pd_train_00090.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "549a0b1d7029acb82bf6b8b37c3f4294dad620bb215aef09ce408f304af49148",
+      "files": [
+        {
+          "split": "pd_train",
+          "label": "Potato___Early_blight",
+          "path": "pd_train/Potato___Early_blight/pd_train_00113.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00622.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "d12f57b58ecdc2b0c530ebaf4f24626d56f8b06932e3dc60ad466eea4ea3a93c",
+      "files": [
+        {
+          "split": "pd_train",
+          "label": "Potato___Early_blight",
+          "path": "pd_train/Potato___Early_blight/pd_train_00067.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00667.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00137.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "2b25ca63c90e07452524684fa34ec3e8f0094b4bc42d9955ab61fb535741fd5c",
+      "files": [
+        {
+          "split": "pd_train",
+          "label": "Potato___Early_blight",
+          "path": "pd_train/Potato___Early_blight/pd_train_00054.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00321.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "f3f9638bf14f49c6c72efe4aa2e06818a4afdb31cbf7dfebc46345c1a82f9384",
+      "files": [
+        {
+          "split": "pd_train",
+          "label": "Potato___Early_blight",
+          "path": "pd_train/Potato___Early_blight/pd_train_00085.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00276.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "f8907e17cd66bc427f8922afd424db076041018e9980d5ad8259730410048d41",
+      "files": [
+        {
+          "split": "pd_train",
+          "label": "Potato___Early_blight",
+          "path": "pd_train/Potato___Early_blight/pd_train_00057.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_01053.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00701.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00177.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Bacterial_spot",
+          "path": "pw_train/Tomato_Bacterial_spot/pw_train_00501.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "47db42f33d2eb575bb4b9c59561eee9be391d89e8d6e533f646f9f891c2a65fa",
+      "files": [
+        {
+          "split": "pd_train",
+          "label": "Potato___Early_blight",
+          "path": "pd_train/Potato___Early_blight/pd_train_00055.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00252.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "321c53136b5a5984f1316e15958bc2b05ec1d97bf3af294c1ec4d12da11ca848",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00254.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00261.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00733.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "423527682ab160d29ad6152487b0b3e7970520383629bf9f8ba3733b743173fa",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00267.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00162.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "63f2a0f3104eebf26ee009a6726b92bf68da5c01b4b894bebd32f88fa1de1299",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00273.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00166.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "f93c7b7aeef1a82dfa0ef09015b6bd5167c161b8c402410f32468403c8246fca",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00286.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Late_blight",
+          "path": "pw_train/Tomato_Late_blight/pw_train_00881.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "fb15dba192f181179963ed509b6ab8e76ad7ca87f4928a99a4b17f0d2502e876",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00312.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00133.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "f8425ba0471c4056d4285485cadc83511516a7c19e9b4139d8065f36af74f0d2",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00293.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Late_blight",
+          "path": "pw_train/Tomato_Late_blight/pw_train_00909.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "f76fcab790060eae0c120eb3281b5e8ef5f8e795e4fe3fda85b2814cae27bb0e",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Late_blight",
+          "path": "pw_train/Tomato_Late_blight/pw_train_00821.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00582.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "b5c193917b9fc99fcfe8674ee9b907fe4551011c556d0e1e353a860716aac411",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Late_blight",
+          "path": "pw_train/Tomato_Late_blight/pw_train_00936.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00617.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "e9514c53a7a15ffde45716912cba7673e30624c26dd12e4b2c5ddb70d63c5593",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Late_blight",
+          "path": "pw_train/Tomato_Late_blight/pw_train_00892.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00714.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "11dffe500ed0b8facd8c7c80f30561dec696a46017aab77f0c4aa6c877eb70c9",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Late_blight",
+          "path": "pw_train/Tomato_Late_blight/pw_train_00883.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00651.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "1422eeb2761909f4b7db8b0226229ef2d12837580df608120c2c116026f9bb56",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_01058.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Bacterial_spot",
+          "path": "pw_train/Tomato_Bacterial_spot/pw_train_00457.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "b27f115123467c5444d9139702f49cd244476bd8d19a2b7509983c53eb7fd934",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_00962.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Bacterial_spot",
+          "path": "pw_train/Tomato_Bacterial_spot/pw_train_00369.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "b45657b15144dcc6aa417574a68c289737848c158337379ef201979f23843fd1",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_01020.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Bacterial_spot",
+          "path": "pw_train/Tomato_Bacterial_spot/pw_train_00411.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "de196a2d8c1642515195f4bfcd853802918bd57963d54bbf0d00934ade5fd639",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_01001.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Bacterial_spot",
+          "path": "pw_train/Tomato_Bacterial_spot/pw_train_00471.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "bbdfce4d9c5b8684568a807927415e6e6a7f277884ba01d3f2ba4840a36e4a38",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_01003.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00637.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "d216ee5a4c159b40d3231e78f3b705d09a7ee75601f32d74f826d1103666250c",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_00971.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Bacterial_spot",
+          "path": "pw_train/Tomato_Bacterial_spot/pw_train_00338.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "ad8039e4cf464d951cfabd68e463740f5ccd9a8d48ee7a42ebd8990d4b0ca81d",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_01043.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00151.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Bacterial_spot",
+          "path": "pw_train/Tomato_Bacterial_spot/pw_train_00503.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "51c7dfd3d28fe254b558cc6ad91d95b295d0dc3f4868eaa357a68cc30dc16022",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_00975.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Bacterial_spot",
+          "path": "pw_train/Tomato_Bacterial_spot/pw_train_00456.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "099fd4c3989a57437ba1f5665d5aea0800375b58b9e32680794976ea28c92a2a",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_01000.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Bacterial_spot",
+          "path": "pw_train/Tomato_Bacterial_spot/pw_train_00433.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "043295e39a71d68618ac2a9934c69ba60bcf5d10ddd685d7d8de0c7c2487ce73",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Pepper__bell___Bacterial_spot",
+          "path": "pw_train/Pepper__bell___Bacterial_spot/pw_train_00027.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Bacterial_spot",
+          "path": "pw_train/Tomato_Bacterial_spot/pw_train_00474.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "e04eddae0bd49224c6f29f154100635e16d04ce5a7897bebd48f0571372f32eb",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00623.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00112.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "f945597dd34e659aa440e78ef85f972e3b33bca7b6b98ddadd66766fa62a638f",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00621.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00156.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "fb305ef6bce14d584df33445168e66b8d9aaa928275a58b91790966990dd656a",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00567.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00094.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "ca1faf331ed5683e90b9a30039c0c7c8d475c262f469ebbbbb37cda7df04a5ee",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00672.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00176.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "adc98988800ab395ca05c4ca607fdea180a59fc6eed1ff95ca20137d167f4dc0",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00608.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00191.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "1a52eff93589b00e3b672b2f67988a7294d8def5307b89fcae668c0f3636f95e",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00726.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00190.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "fee718f09733e17b6673d35f095eb805878346256676e6ac3e38d1334a868b46",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00660.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00138.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "97627734f42ac19bb023efd9ed81f24ba659ff318e35e82b5ada7d2d20db7b64",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00664.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00173.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "06a2e69b857cad8719e012f4ece39709cd1357d4ff508f19767658c96f0b5e74",
+      "files": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00158.jpg"
+        },
+        {
+          "split": "pw_train",
+          "label": "Tomato_Bacterial_spot",
+          "path": "pw_train/Tomato_Bacterial_spot/pw_train_00450.jpg"
+        }
+      ]
+    }
+  ],
+  "deduplicated_group_details": [
+    {
+      "sha256": "6ffaa6e5c4740908e8815d06f1930740709e934d1eb0568c4a0557083869fc8a",
+      "kept": {
+        "split": "pv_val",
+        "label": "Tomato_Late_blight",
+        "path": "pv_val/Tomato_Late_blight/pv_val_00883.jpg"
+      },
+      "removed": [
+        {
+          "split": "pv_train",
+          "label": "Tomato_Late_blight",
+          "path": "pv_train/Tomato_Late_blight/pv_train_05444.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "a420b40d97c5e0ecc2004a407211cd88a5bd1d60f052c096a1a0a9676c743412",
+      "kept": {
+        "split": "pv_val",
+        "label": "Tomato_healthy",
+        "path": "pv_val/Tomato_healthy/pv_val_01536.jpg"
+      },
+      "removed": [
+        {
+          "split": "pv_train",
+          "label": "Tomato_healthy",
+          "path": "pv_train/Tomato_healthy/pv_train_08801.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "e9697963d6dda7d21b6b0adb23c6509846500836b33001075c30a6e5944c0ba0",
+      "kept": {
+        "split": "pd_test",
+        "label": "Tomato_Early_blight",
+        "path": "pd_test/Tomato_Early_blight/pd_test_00037.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_test",
+          "label": "Tomato_Early_blight",
+          "path": "pw_test/Tomato_Early_blight/pw_test_00154.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "56f3bf57c75312c93cec8a8011cb86fc1e500aebc0bd8de81f9926dfe5ae44b1",
+      "kept": {
+        "split": "pv_train",
+        "label": "Tomato_Late_blight",
+        "path": "pv_train/Tomato_Late_blight/pv_train_05303.jpg"
+      },
+      "removed": [
+        {
+          "split": "pv_train",
+          "label": "Tomato_Late_blight",
+          "path": "pv_train/Tomato_Late_blight/pv_train_06866.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "43aeb6d4c445fa254b52cd5ad53b9ca35b179027ff2686a1c9ccbaa80ea46636",
+      "kept": {
+        "split": "pv_train",
+        "label": "Tomato_Late_blight",
+        "path": "pv_train/Tomato_Late_blight/pv_train_06666.jpg"
+      },
+      "removed": [
+        {
+          "split": "pv_train",
+          "label": "Tomato_Late_blight",
+          "path": "pv_train/Tomato_Late_blight/pv_train_06759.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "8e4812beda5a2fe395f3bea567779a5817c1e22aa954074fc38178fc020f59cc",
+      "kept": {
+        "split": "pv_train",
+        "label": "Tomato_Late_blight",
+        "path": "pv_train/Tomato_Late_blight/pv_train_05772.jpg"
+      },
+      "removed": [
+        {
+          "split": "pv_train",
+          "label": "Tomato_Late_blight",
+          "path": "pv_train/Tomato_Late_blight/pv_train_06808.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "276f325e11dfdc78dd526e1b0fc96e8bf0f6c97fd06c3353b15d0fcfbc35ff8c",
+      "kept": {
+        "split": "pv_train",
+        "label": "Tomato_Late_blight",
+        "path": "pv_train/Tomato_Late_blight/pv_train_05887.jpg"
+      },
+      "removed": [
+        {
+          "split": "pv_train",
+          "label": "Tomato_Late_blight",
+          "path": "pv_train/Tomato_Late_blight/pv_train_06488.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "fb734e91211d14249c71a245b4474ca56170f6403eebef8bc78d86e82245db3c",
+      "kept": {
+        "split": "pv_train",
+        "label": "Tomato_Late_blight",
+        "path": "pv_train/Tomato_Late_blight/pv_train_05465.jpg"
+      },
+      "removed": [
+        {
+          "split": "pv_train",
+          "label": "Tomato_Late_blight",
+          "path": "pv_train/Tomato_Late_blight/pv_train_05476.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "295c16905d3d658674091a85c0c4f12f2992fa4268c13c9e2b8f83dba3015677",
+      "kept": {
+        "split": "pv_train",
+        "label": "Tomato_Late_blight",
+        "path": "pv_train/Tomato_Late_blight/pv_train_06716.jpg"
+      },
+      "removed": [
+        {
+          "split": "pv_train",
+          "label": "Tomato_Late_blight",
+          "path": "pv_train/Tomato_Late_blight/pv_train_06817.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "7f794717b9d0ea7b13794a57cf13cda8e3a491683fd4505b87193141589ab4db",
+      "kept": {
+        "split": "pv_train",
+        "label": "Tomato_Late_blight",
+        "path": "pv_train/Tomato_Late_blight/pv_train_05858.jpg"
+      },
+      "removed": [
+        {
+          "split": "pv_train",
+          "label": "Tomato_Late_blight",
+          "path": "pv_train/Tomato_Late_blight/pv_train_06561.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "c51d580130b6ccbe4ef05d195bd86cd8eae423c4d4692ed41f7e27de970e982e",
+      "kept": {
+        "split": "pv_train",
+        "label": "Tomato_healthy",
+        "path": "pv_train/Tomato_healthy/pv_train_08998.jpg"
+      },
+      "removed": [
+        {
+          "split": "pv_train",
+          "label": "Tomato_healthy",
+          "path": "pv_train/Tomato_healthy/pv_train_09634.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "4aadfddb67e69dc498a0857a813501fa78e1c1e5063abd2009d2b73ad92d68b8",
+      "kept": {
+        "split": "pv_train",
+        "label": "Tomato_healthy",
+        "path": "pv_train/Tomato_healthy/pv_train_08551.jpg"
+      },
+      "removed": [
+        {
+          "split": "pv_train",
+          "label": "Tomato_healthy",
+          "path": "pv_train/Tomato_healthy/pv_train_08853.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "d89ed1e041aed20fe6abaa2c2369f397f701b00c19676ac661a1ff2364696fa0",
+      "kept": {
+        "split": "pv_train",
+        "label": "Tomato_healthy",
+        "path": "pv_train/Tomato_healthy/pv_train_08895.jpg"
+      },
+      "removed": [
+        {
+          "split": "pv_train",
+          "label": "Tomato_healthy",
+          "path": "pv_train/Tomato_healthy/pv_train_09040.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "38aec1a9315d5df672eca510384ac9be62bf1c29716216848de82e6f2f96ba0f",
+      "kept": {
+        "split": "pv_train",
+        "label": "Tomato_healthy",
+        "path": "pv_train/Tomato_healthy/pv_train_08496.jpg"
+      },
+      "removed": [
+        {
+          "split": "pv_train",
+          "label": "Tomato_healthy",
+          "path": "pv_train/Tomato_healthy/pv_train_09630.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "3b8ba8a5e6bac9ca26e4ed1397aa07fc326d838ba4a1321460ee087f8df7e29b",
+      "kept": {
+        "split": "pv_train",
+        "label": "Tomato_healthy",
+        "path": "pv_train/Tomato_healthy/pv_train_08715.jpg"
+      },
+      "removed": [
+        {
+          "split": "pv_train",
+          "label": "Tomato_healthy",
+          "path": "pv_train/Tomato_healthy/pv_train_08816.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "f42961d0293d4d347c759ae3e4a4ca6a45c2e133a7fab8adb7a6614bad585c52",
+      "kept": {
+        "split": "pd_val",
+        "label": "Tomato_Late_blight",
+        "path": "pd_val/Tomato_Late_blight/pd_val_00088.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_val",
+          "label": "Tomato_Late_blight",
+          "path": "pw_val/Tomato_Late_blight/pw_val_00110.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "c7bdc82ebee8828152613aba316bf69226cfc934b4f3a2484809079a2873b212",
+      "kept": {
+        "split": "pd_train",
+        "label": "Potato___Late_blight",
+        "path": "pd_train/Potato___Late_blight/pd_train_00140.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00309.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "cacf875843536929994b9889398f647a70e7e24c312343da33000ad895aa7334",
+      "kept": {
+        "split": "pd_train",
+        "label": "Potato___Late_blight",
+        "path": "pd_train/Potato___Late_blight/pd_train_00152.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00318.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "3be326a6c906944a25193cc23a043e6e5ee6de76276f55f45b429790bdddbc84",
+      "kept": {
+        "split": "pd_train",
+        "label": "Potato___Late_blight",
+        "path": "pd_train/Potato___Late_blight/pd_train_00167.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00322.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "e0acd8d27ef9e55374f2971bccbeba3265d1dd23e3ccd52ae1ea9c83009ceb35",
+      "kept": {
+        "split": "pd_train",
+        "label": "Potato___Late_blight",
+        "path": "pd_train/Potato___Late_blight/pd_train_00209.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00299.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "a3aec8969077a447a68091a8e0d10340ea665bc6a979566067b45dc2df12aa85",
+      "kept": {
+        "split": "pd_train",
+        "label": "Potato___Late_blight",
+        "path": "pd_train/Potato___Late_blight/pd_train_00190.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00290.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "d318248ee8f91d4f6cc204cde40bf7f29af1a7770340967726efc9fff82ea54a",
+      "kept": {
+        "split": "pd_val",
+        "label": "Tomato_Late_blight",
+        "path": "pd_val/Tomato_Late_blight/pd_val_00096.jpg"
+      },
+      "removed": [
+        {
+          "split": "pd_train",
+          "label": "Tomato_Late_blight",
+          "path": "pd_train/Tomato_Late_blight/pd_train_00378.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "355845b788567ccbf3918e78fee7253332877dc2fa1630a74736c946f765d68f",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Septoria_leaf_spot",
+        "path": "pd_train/Tomato_Septoria_leaf_spot/pd_train_00440.jpg"
+      },
+      "removed": [
+        {
+          "split": "pd_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pd_train/Tomato_Septoria_leaf_spot/pd_train_00514.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "1b051d2a40a3a9e708cf352db98246f916048d3bd5353ac0d0ceb8723e4269d8",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Septoria_leaf_spot",
+        "path": "pd_train/Tomato_Septoria_leaf_spot/pd_train_00511.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_00991.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "e65a63d0ad1875c709991086cfc7b176b390ecc0f896b7e23a14bbbd3603915b",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Septoria_leaf_spot",
+        "path": "pd_train/Tomato_Septoria_leaf_spot/pd_train_00455.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_01051.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "79180707bf0c19e17af234285fea14413e0b2365886db595f8220f20b9fa6e19",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Septoria_leaf_spot",
+        "path": "pd_train/Tomato_Septoria_leaf_spot/pd_train_00469.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_00988.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "293645091db83e36b60aa239e360084ea536d2e3cecb17e7927a086f46acb1b8",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Septoria_leaf_spot",
+        "path": "pd_train/Tomato_Septoria_leaf_spot/pd_train_00452.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_01049.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "44aa69e4d4bb8663a575623ed9209de9713c058b30fb373689bd2324a3daa5ce",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Septoria_leaf_spot",
+        "path": "pd_train/Tomato_Septoria_leaf_spot/pd_train_00531.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Septoria_leaf_spot",
+          "path": "pw_train/Tomato_Septoria_leaf_spot/pw_train_00980.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "fcda2447213dbf9e48e5e0467bc9c29f481d355a1f74f29ff939ca8405a16b18",
+      "kept": {
+        "split": "pd_train",
+        "label": "Pepper__bell___Bacterial_spot",
+        "path": "pd_train/Pepper__bell___Bacterial_spot/pd_train_00028.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Pepper__bell___Bacterial_spot",
+          "path": "pw_train/Pepper__bell___Bacterial_spot/pw_train_00018.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "1fc71d6f8437d6e676889ea9e3a16d9753f680b7eb777990bb3d3d9f85286626",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Early_blight",
+        "path": "pd_train/Tomato_Early_blight/pd_train_00322.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00735.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "083380f45829a744bc0a4e8dd83b1e6ff2586ab12637b3875fbe3e1c528aa19e",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Early_blight",
+        "path": "pd_train/Tomato_Early_blight/pd_train_00321.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00627.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "919228733ed48d4929f3eeaf92a2b22c5bc6426904cfbb3b630947a6dee7cd66",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Early_blight",
+        "path": "pd_train/Tomato_Early_blight/pd_train_00340.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00668.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "ec0bc0694742c73a8b9d3acb514c3464d31b7325c336a595e06d8c6a6df7245a",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Early_blight",
+        "path": "pd_train/Tomato_Early_blight/pd_train_00338.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00614.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "cb199b6c26cdf077bdf0df697e7e7795dc49b06682e8850fd0a1c940752b0904",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Early_blight",
+        "path": "pd_train/Tomato_Early_blight/pd_train_00312.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00619.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "a7a926815a4180bbc6ee5209f1fe3d62008ff694ee9261952b0c988053f89eab",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Early_blight",
+        "path": "pd_train/Tomato_Early_blight/pd_train_00298.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00663.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "06786c916808ab9f24d0ba358638be48e8d9a167f52ca0155e21b8b804d47a39",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Early_blight",
+        "path": "pd_train/Tomato_Early_blight/pd_train_00334.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00618.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "6116ff853a10b6a9682b2c001310232b915d339025ec89cc9263e78841ebf58a",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Early_blight",
+        "path": "pd_train/Tomato_Early_blight/pd_train_00299.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Early_blight",
+          "path": "pw_train/Tomato_Early_blight/pw_train_00609.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "18369d325cd784813c2181ab8979a4271211490a0ef62969c83f9473ddccde1e",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_healthy",
+        "path": "pd_train/Tomato_healthy/pd_train_00555.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_healthy",
+          "path": "pw_train/Tomato_healthy/pw_train_01161.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "91c34215edfd243686efab4331630a11d22b7d6be1c1d03b572406de4d64784d",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_healthy",
+        "path": "pd_train/Tomato_healthy/pd_train_00574.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_healthy",
+          "path": "pw_train/Tomato_healthy/pw_train_01153.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "988416bede9b196def4bce71343b5a7c6ba2668e67891ea09c739baa400d73ab",
+      "kept": {
+        "split": "pd_train",
+        "label": "Potato___Early_blight",
+        "path": "pd_train/Potato___Early_blight/pd_train_00124.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00110.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "814fedb5b06b476a976768a0050f7569d2bc964ca467abece177ca8f06026ff0",
+      "kept": {
+        "split": "pd_train",
+        "label": "Potato___Early_blight",
+        "path": "pd_train/Potato___Early_blight/pd_train_00080.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00115.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "9deec5a35664176f4cce7359e192816ca6dd58a03974fc43954ac68782cd0073",
+      "kept": {
+        "split": "pd_train",
+        "label": "Potato___Early_blight",
+        "path": "pd_train/Potato___Early_blight/pd_train_00118.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00116.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "151c2e48c0de21e7b2502a6edbce1d16ede0253f307085fdea8e6b2127c23427",
+      "kept": {
+        "split": "pd_train",
+        "label": "Potato___Early_blight",
+        "path": "pd_train/Potato___Early_blight/pd_train_00093.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00119.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "959ffd1fdb285473310ce449f1d3cceb824687ed7ae521216b3e95a893dc2dab",
+      "kept": {
+        "split": "pd_train",
+        "label": "Potato___Early_blight",
+        "path": "pd_train/Potato___Early_blight/pd_train_00074.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00114.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "afc82af52e4e0896bd52525d83092c285ae5fe80c6b9ba4aa947b79548338712",
+      "kept": {
+        "split": "pd_train",
+        "label": "Potato___Early_blight",
+        "path": "pd_train/Potato___Early_blight/pd_train_00121.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00164.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "855612e776b6488af8614bb44c18945c91d14367f7aedf555533a1b12d8caf23",
+      "kept": {
+        "split": "pd_train",
+        "label": "Potato___Early_blight",
+        "path": "pd_train/Potato___Early_blight/pd_train_00061.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00170.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "a8575e43b460ded2977960c8b29a9a325a8b4207f49ee76f555dce8a0c2b1db5",
+      "kept": {
+        "split": "pd_train",
+        "label": "Potato___Early_blight",
+        "path": "pd_train/Potato___Early_blight/pd_train_00094.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Early_blight",
+          "path": "pw_train/Potato___Early_blight/pw_train_00123.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "18f06a36f69510ef3aac6da4cd9377f545b7b46625a549bfe4daae06436fc710",
+      "kept": {
+        "split": "pd_train",
+        "label": "Tomato_Bacterial_spot",
+        "path": "pd_train/Tomato_Bacterial_spot/pd_train_00268.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Bacterial_spot",
+          "path": "pw_train/Tomato_Bacterial_spot/pw_train_00428.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "e9c852ed16c29d6313c787803438986c95e2f0e17bef26548df3286f55d4ec93",
+      "kept": {
+        "split": "pw_train",
+        "label": "Potato___Late_blight",
+        "path": "pw_train/Potato___Late_blight/pw_train_00253.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Potato___Late_blight",
+          "path": "pw_train/Potato___Late_blight/pw_train_00255.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "b73b8005be4e130be64e4e60c515e76d38e168ccb322f5951a7f23379f610648",
+      "kept": {
+        "split": "pw_train",
+        "label": "Tomato_Late_blight",
+        "path": "pw_train/Tomato_Late_blight/pw_train_00766.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Late_blight",
+          "path": "pw_train/Tomato_Late_blight/pw_train_00837.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "334a144c5b8b58445c24ea4022c6fbd639883993073c0960bddcd19138a74617",
+      "kept": {
+        "split": "pw_train",
+        "label": "Tomato_Late_blight",
+        "path": "pw_train/Tomato_Late_blight/pw_train_00752.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Late_blight",
+          "path": "pw_train/Tomato_Late_blight/pw_train_00839.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "6b4dd61a1f50a9ee2f19d527b777d96cf0267d68f63a95169911fccbc767c9d4",
+      "kept": {
+        "split": "pw_train",
+        "label": "Tomato_Late_blight",
+        "path": "pw_train/Tomato_Late_blight/pw_train_00747.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Late_blight",
+          "path": "pw_train/Tomato_Late_blight/pw_train_00844.jpg"
+        }
+      ]
+    },
+    {
+      "sha256": "5fd283a7cdd749915d36276938028f695968dd67b8a2cefc5055dbced0943c31",
+      "kept": {
+        "split": "pw_train",
+        "label": "Tomato_Late_blight",
+        "path": "pw_train/Tomato_Late_blight/pw_train_00765.jpg"
+      },
+      "removed": [
+        {
+          "split": "pw_train",
+          "label": "Tomato_Late_blight",
+          "path": "pw_train/Tomato_Late_blight/pw_train_00841.jpg"
+        }
+      ]
+    }
+  ],
+  "split_priority": [
+    "pd_test",
+    "pw_test",
+    "pd_val",
+    "pw_val",
+    "pv_val",
+    "pd_train",
+    "pw_train",
+    "pv_train"
+  ],
+  "policy": "Drop every exact-content group with conflicting class labels. For same-label copies, keep one image and prefer test, then validation, then training splits so no duplicate content leaks into a held-out split."
+}

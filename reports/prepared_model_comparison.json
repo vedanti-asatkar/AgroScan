@@ -1,0 +1,83 @@
+{
+  "dataset_archive": "agroscan_prepared_v1.zip",
+  "dataset_archive_sha256": "c4559a4eb1159b92c928be7fcd8a877aeb7b00fbc4ab6f12eed6d0a6f2c0af5f",
+  "evaluation_policy": {
+    "split_audit_file": "reports/prepared_dataset_audit.json",
+    "exact_duplicate_groups_crossing_splits": 46,
+    "exact_duplicate_groups_with_conflicting_labels": 42,
+    "test_exclusions": {
+      "pd_test": {
+        "full_count": 72,
+        "excluded_count": 2,
+        "clean_count": 70
+      },
+      "pw_test": {
+        "full_count": 304,
+        "excluded_count": 5,
+        "clean_count": 299
+      }
+    },
+    "note": "Scores below use the same exact-deduplicated test manifests for both models. The pipeline model training manifest had zero exact-hash overlaps with either archived test set."
+  },
+  "quality_gate": {
+    "metric": "top1_accuracy",
+    "minimum": 0.5,
+    "applies_to": "PlantDoc test"
+  },
+  "models": {
+    "existing_v5": {
+      "version": "agroscan-v5-mobilenetv2",
+      "plantdoc_test": {
+        "n_images": 70,
+        "top1_accuracy": 0.6142857142857143,
+        "top3_accuracy": 0.9428571428571428,
+        "quality_gate_passed": true
+      },
+      "plantwild_test": {
+        "n_images": 299,
+        "top1_accuracy": 0.6053511705685619,
+        "top3_accuracy": 0.8896321070234113
+      }
+    },
+    "new_pipeline_model": {
+      "mlflow_run_id": "af8a4d72ce294efdb725b814e7d5c4dd",
+      "registered_model": "agroscan-mobilenetv2",
+      "registered_version": "1",
+      "plantdoc_test": {
+        "n_images": 70,
+        "top1_accuracy": 0.42857142857142855,
+        "top3_accuracy": 0.7857142857142857,
+        "quality_gate_passed": false
+      },
+      "plantwild_test": {
+        "n_images": 299,
+        "top1_accuracy": 0.3745819397993311,
+        "top3_accuracy": 0.6822742474916388
+      }
+    }
+  },
+  "notebook_reported_validation": {
+    "source": "AgroScan_Part2_training_WORKING_COPY.ipynb saved output",
+    "independently_reproduced": false,
+    "samples": {
+      "plantdoc_validation": 147,
+      "plantwild_validation": 146
+    },
+    "mobilenetv2": {
+      "plantdoc_accuracy": 0.5578231292517006,
+      "plantdoc_macro_f1": 0.5699000023128531,
+      "plantdoc_top3_accuracy": 0.8775510204081632,
+      "plantwild_accuracy": 0.6986301369863014,
+      "plantwild_macro_f1": 0.6755251849236812,
+      "plantwild_top3_accuracy": 0.9041095890410958
+    },
+    "efficientnetv2s": {
+      "plantdoc_accuracy": 0.54421768707483,
+      "plantdoc_macro_f1": 0.5665721458798998,
+      "plantdoc_top3_accuracy": 0.891156462585034,
+      "plantwild_accuracy": 0.6575342465753424,
+      "plantwild_macro_f1": 0.6547583901465033,
+      "plantwild_top3_accuracy": 0.910958904109589
+    }
+  }
+}

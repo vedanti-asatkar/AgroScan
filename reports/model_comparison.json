@@ -1,0 +1,28 @@
+{
+  "dataset": "PlantDoc test",
+  "manifest": "data/prepared/test.csv",
+  "n_images": 72,
+  "same_test_split": true,
+  "quality_gate": {
+    "metric": "top1_accuracy",
+    "minimum": 0.5
+  },
+  "models": {
+    "existing_v5": {
+      "version": "agroscan-v5-mobilenetv2",
+      "top1_accuracy": 0.5833333333333334,
+      "top3_accuracy": 0.9444444444444444,
+      "quality_gate_passed": true
+    },
+    "new_pipeline_model": {
+      "mlflow_run_id": "af8a4d72ce294efdb725b814e7d5c4dd",
+      "registered_model": "agroscan-mobilenetv2",
+      "registered_version": "1",
+      "top1_accuracy": 0.4444444444444444,
+      "macro_f1": 0.42858239255298075,
+      "quality_gate_passed": false
+    }
+  },
+  "pipeline_minus_v5_top1_percentage_points": -13.89,
+  "interpretation": "The existing v5 model clears the configured PlantDoc test accuracy gate. The newly trained pipeline model does not; DVC stopped before export and drift."
+}

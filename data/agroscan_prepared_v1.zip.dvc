@@ -1,0 +1,5 @@
+outs:
+- md5: cd6220990aac074acfd2b4b805c6ee26
+  size: 470403825
+  hash: md5
+  path: agroscan_prepared_v1.zip
