@@ -34,22 +34,41 @@ def metrics_table(m: dict | None) -> str:
     return "\n".join(out) + "\n"
 
 
-def per_class_table(r: dict | None) -> str:
-    if not r:
-        return "_reports/classification_report.json not found._\n"
+def _is_report(d) -> bool:
+    """True for a scikit-learn style report: {class: {precision, recall, f1-score, support}, ...}."""
+    return isinstance(d, dict) and any(
+        isinstance(v, dict) and "precision" in v and "support" in v for v in d.values())
+
+
+def _report_rows(r: dict) -> list[str]:
     skip = {"accuracy", "macro avg", "weighted avg", "micro avg"}
     out = ["| Class | Precision | Recall | F1 | Support |", "|---|---|---|---|---|"]
+
+    def row(label, d):
+        return (f"| {label} | {d['precision']:.3f} | {d['recall']:.3f} | "
+                f"{d['f1-score']:.3f} | {int(d['support'])} |")
+
     for name, d in r.items():
-        if name in skip or not isinstance(d, dict):
-            continue
-        out.append(f"| {name} | {d['precision']:.3f} | {d['recall']:.3f} | "
-                   f"{d['f1-score']:.3f} | {int(d['support'])} |")
+        if name not in skip and isinstance(d, dict) and "precision" in d:
+            out.append(row(name, d))
     for name in ("macro avg", "weighted avg"):
         d = r.get(name)
-        if isinstance(d, dict):
-            out.append(f"| **{name}** | {d['precision']:.3f} | {d['recall']:.3f} | "
-                       f"{d['f1-score']:.3f} | {int(d['support'])} |")
-    return "\n".join(out) + "\n"
+        if isinstance(d, dict) and "precision" in d:
+            out.append(row(f"**{name}**", d))
+    return out
+
+
+def per_class_table(r: dict | None) -> str:
+    """Handles a flat report, or one nested by split (e.g. {"val": {...}, "test": {...}})."""
+    if not r:
+        return "_reports/classification_report.json not found._\n"
+    if _is_report(r):
+        return "\n".join(_report_rows(r)) + "\n"
+    parts = []
+    for split, rep in r.items():
+        if _is_report(rep):
+            parts.append(f"**{split}**\n\n" + "\n".join(_report_rows(rep)) + "\n")
+    return "\n".join(parts) if parts else "_classification_report.json has an unrecognised format._\n"
 
 
 def main() -> None:
