@@ -1,0 +1,38 @@
+# Monitoring and retraining thresholds (owned by Person B).
+# Read by src/monitor_logs.py and airflow/dags/agroscan_pipeline.py.
+# Nothing in code hard-codes these numbers; change them here.
+
+paths:
+  prediction_log: logs/predictions.jsonl
+  summary_out: reports/monitoring/summary.json
+  reference: reports/monitoring/reference.json     # brightness / class-mix baseline
+  metrics: reports/metrics.json                    # written by A's evaluate stage
+  drift_report: reports/drift.json                 # written by A's drift stage
+  params: params.yaml                              # A's file; we only read evaluate.min_test_accuracy
+
+window:
+  # Only look at the most recent predictions / days. Set either to null to disable.
+  last_n: 1000
+  last_days: 7
+  # Below this many predictions the summary is marked "insufficient_data"
+  # and no alert or retrain trigger can fire.
+  min_predictions: 50
+
+alerts:                      # warn only: shown in the summary, do not trigger retrain
+  low_confidence_rate_warn: 0.30
+  latency_p95_ms_warn: 1500
+  brightness_drift_zscore_warn: 2.0
+
+retrain:                     # any one of these triggers a retrain decision
+  low_confidence_rate_max: 0.45
+  brightness_drift_zscore_max: 3.0
+  class_mix_tv_distance_max: 0.30   # total-variation distance vs reference class mix
+  retrain_on_offline_drift: true    # reports/drift.json says drift detected
+  accuracy_floor_source: params     # "params" -> evaluate.min_test_accuracy, or a number
+  accuracy_floor_fallback: 0.50     # used only if params.yaml cannot be read
+
+# Where to find the numbers in A's report files (first key that exists wins).
+# Confirm these against A's real metrics.json / drift.json once A1 merges.
+report_keys:
+  accuracy: [test_accuracy, plantdoc_test_accuracy, test_top1_accuracy, accuracy]
+  drift_flag: [drift_detected, drifted, any_drift]
