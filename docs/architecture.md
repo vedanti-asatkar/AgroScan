@@ -67,7 +67,7 @@ flowchart LR
 
 `api/main.py` checks model metadata in this order: `models/model_meta.json`, then `models/model_meta.v5.json`; if neither exists, it falls back to `models/model.keras` and `models/classes.json`. Metadata selects the model file, class-name file, image size, input range, center-crop behavior, confidence threshold, and top-k count. The shared preprocessing code is `src/preprocess.py`.
 
-The API routes are `/`, `/health`, `/ready`, `/dashboard`, `POST /predict`, and the static React UI under `/ui/`. `/health` is liveness; `/ready` is the model-loaded check; `/dashboard` summarizes the prediction log and reads evaluation and monitoring reports for dashboard context. The API appends summaries to `logs/predictions.jsonl`; `src.monitor_logs` reads that log and can also use `reports/metrics.json`, `reports/drift.json`, and `configs/monitoring.yaml`.
+The API routes are `/`, `/health`, `/ready`, `/dashboard`, `POST /predict`, `POST /feedback`, and the static React UI under `/ui/`. `/health` is liveness; `/ready` is the model-loaded check; `/dashboard` summarizes current predictions and verified feedback, with saved evaluation reports kept as offline benchmarks. `/feedback` records a user-supplied actual class in `logs/feedback.jsonl`, which allows live accuracy and F1 to be calculated only for reviewed predictions. The API appends prediction summaries to `logs/predictions.jsonl`; `src.monitor_logs` reads that log and can also use `reports/metrics.json`, `reports/drift.json`, and `configs/monitoring.yaml`.
 
 Offline drift in `src/drift_check.py` compares image brightness and channel means from prepared train and test samples. It does not read API logs. `src.monitor_logs.py` is the separate prediction-log monitor.
 

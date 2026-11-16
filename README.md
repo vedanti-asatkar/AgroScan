@@ -45,7 +45,7 @@ npm run dev
 
 Vite proxies `/health`, `/ready`, and `/predict` to FastAPI. For a local production preview, run `npm install` and `npm run build` from `ui/` before `make serve`.
 
-The dashboard keeps recent scan summaries in the current browser's local storage; uploaded images are not stored in the scan history. It has separate pages for overview, leaf analysis, scan history, model performance, and MLOps consoles. The model performance page shows validation and held-out metrics plus per-class results from the evaluation reports. Available API routes are `/` (status), `/health` (liveness), `/ready` (model loaded and version), `/dashboard` (live dashboard and evaluation summary), and `POST /predict` (multipart field `file`). Example:
+The dashboard keeps recent scan summaries in the current browser's local storage; uploaded images are not stored in the scan history. It has separate pages for overview, leaf analysis, scan history, model performance, and MLOps consoles. The performance page derives traffic, confidence, and latency metrics from current prediction logs; accuracy and F1 use user-verified prediction feedback. Saved evaluation reports appear separately as offline benchmarks. Available API routes are `/` (status), `/health` (liveness), `/ready` (model loaded and version), `/dashboard` (live summary), `POST /predict` (multipart field `file`), and `POST /feedback` (verified actual class for a prediction). Example:
 
 For predictions, pull the DVC-managed model before building/running the API. Without a model artifact, the service can answer `/health`, but `/ready` returns 503 and `/predict` is unavailable.
 
