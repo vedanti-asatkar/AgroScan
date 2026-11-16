@@ -11,6 +11,8 @@ services:
         VITE_MLFLOW_URL: ${VITE_MLFLOW_URL:-http://localhost:5000}
         VITE_AIRFLOW_URL: ${VITE_AIRFLOW_URL:-http://localhost:8080}
     ports: ["8000:8000"]
-    volumes: ["./logs:/app/logs"]
+    volumes:
+      - "./logs:/app/logs"
+      - "./reports/monitoring:/app/reports/monitoring"
 volumes:
   mlflow-data:

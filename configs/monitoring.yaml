@@ -17,11 +17,14 @@ window:
   # Below this many predictions the summary is marked "insufficient_data"
   # and no alert or retrain trigger can fire.
   min_predictions: 50
+  # Verified labels needed before live accuracy can raise a warning.
+  min_labeled_predictions: 20
 
 alerts:                      # warn only: shown in the summary, do not trigger retrain
   low_confidence_rate_warn: 0.30
   latency_p95_ms_warn: 1500
   brightness_drift_zscore_warn: 2.0
+  live_accuracy_warn: 0.60
 
 retrain:                     # any one of these triggers a retrain decision
   low_confidence_rate_max: 0.45

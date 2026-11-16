@@ -18,6 +18,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/__init__.py src/preprocess.py ./src/
+COPY configs/monitoring.yaml ./configs/monitoring.yaml
 COPY api/ ./api/
 COPY reports/metrics.json reports/classification_report.json reports/v5_plantdoc_metrics.json ./reports/
 COPY --from=frontend /frontend/dist ./ui/dist

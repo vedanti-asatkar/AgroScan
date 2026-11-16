@@ -41,7 +41,20 @@ function App() {
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [activeConsole, setActiveConsole] = useState('mlflow');
   const [activePage, setActivePage] = useState('overview');
+  const [feedbackClass, setFeedbackClass] = useState('');
+  const [feedbackSaved, setFeedbackSaved] = useState(false);
+  const [feedbackBusy, setFeedbackBusy] = useState(false);
+  const [feedbackError, setFeedbackError] = useState('');
+  const [clearBusy, setClearBusy] = useState(false);
+  const [clearError, setClearError] = useState('');
   const pageTitles = { overview: 'Overview', analyze: 'New analysis', history: 'Scan history', performance: 'Model performance', mlops: 'MLOps consoles' };
+
+  const refreshAnalytics = async () => {
+    try {
+      const response = await fetch('/dashboard');
+      if (response.ok) setAnalytics(await response.json());
+    } catch { /* retain the latest available dashboard summary */ }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -53,18 +66,9 @@ function App() {
         if (alive) setReady(data);
       } catch { if (alive) setReady(null); }
     };
-    const loadAnalytics = async () => {
-      try {
-        const response = await fetch('/dashboard');
-        if (response.ok) {
-          const data = await response.json();
-          if (alive) setAnalytics(data);
-        }
-      } catch { /* live counters remain in their last known state */ }
-    };
     check();
-    loadAnalytics();
-    const timer = window.setInterval(() => { check(); loadAnalytics(); }, 30000);
+    refreshAnalytics();
+    const timer = window.setInterval(() => { check(); refreshAnalytics(); }, 30000);
     return () => { alive = false; window.clearInterval(timer); };
   }, []);
 
@@ -95,6 +99,7 @@ function App() {
       const data = await response.json();
       const item = { ...data, filename: file.name, createdAt: new Date().toISOString() };
       setResult(item);
+      setFeedbackClass(data.predicted_class); setFeedbackSaved(false); setFeedbackError('');
       const next = [item, ...readHistory()].slice(0, 12);
       setHistory(next); localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
     } catch (e) { setError(e.message || 'Could not reach AgroScan. Check the API connection.'); }
@@ -110,14 +115,43 @@ function App() {
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a'); link.href = url; link.download = 'agroscan-scan-history.csv'; link.click(); URL.revokeObjectURL(url);
   };
-  const clearHistory = () => {
-    if (!history.length || !window.confirm('Clear all scan history saved in this browser?')) return;
-    localStorage.removeItem(HISTORY_KEY); setHistory([]); setResult(null);
+  const clearHistory = async () => {
+    if (clearBusy || !window.confirm('Clear all live scan and feedback data for this AgroScan server? This resets scan counts and live metrics for every dashboard page and user.')) return;
+    setClearBusy(true); setClearError('');
+    try {
+      const response = await fetch('/history', { method: 'DELETE' });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.detail || `Could not clear server scan data (${response.status}).`);
+      }
+      localStorage.removeItem(HISTORY_KEY);
+      setHistory([]); setResult(null); setShowAllHistory(false);
+      setFeedbackSaved(false); setFeedbackError('');
+      await refreshAnalytics();
+    } catch (e) { setClearError(e.message || 'Could not clear scan data.'); }
+    finally { setClearBusy(false); }
   };
   const current = result || history[0];
   const confidence = Number(current?.confidence || 0);
   const daily = analytics?.daily_predictions || [];
   const maxDaily = Math.max(1, ...daily.map((item) => item.count));
+  const submitFeedback = async (actualClass) => {
+    if (!current?.prediction_id || feedbackBusy || feedbackSaved) return;
+    setFeedbackBusy(true); setFeedbackError('');
+    try {
+      const response = await fetch('/feedback', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prediction_id: current.prediction_id, actual_class: actualClass }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.detail || `Could not save feedback (${response.status}).`);
+      }
+      setFeedbackSaved(true);
+      await refreshAnalytics();
+    } catch (e) { setFeedbackError(e.message || 'Could not save feedback.'); }
+    finally { setFeedbackBusy(false); }
+  };
 
   return <div className="app-shell">
     <aside className="sidebar">
@@ -173,27 +207,37 @@ function App() {
             <div className="panel-heading result-heading"><div><div className="section-kicker">LATEST RESULT</div><h2>{current ? 'Analysis insight' : 'Your result will appear here'}</h2><p>{current ? current.filename : 'Start a scan to see the prediction.'}</p></div>{current && <span className={`result-state ${current.low_confidence ? 'uncertain' : 'confirmed'}`}><i/>{current.low_confidence ? 'Review result' : 'High confidence'}</span>}</div>
             {current ? <div className="result-content"><div className={`result-hero ${current.low_confidence ? 'caution' : ''}`}><span className="result-leaf"><Icon name="leaf" size={20}/></span><div><span className="result-label">{current.low_confidence ? 'POSSIBLE MATCH' : /healthy/i.test(current.predicted_class) ? 'HEALTHY LEAF' : 'PREDICTED CONDITION'}</span><h3>{pretty(current.predicted_class)}</h3><p>{current.low_confidence ? (current.message || 'Try a closer, well-lit photo of one leaf.') : 'Review the result alongside what you can see in the field.'}</p></div></div><div className="confidence-row"><div><span>Model confidence</span><strong>{percent(confidence)}</strong></div><div className="confidence-track"><span style={{ width: percent(confidence) }}/></div></div><div className="top-predictions"><div className="predictions-title">OTHER POSSIBLE MATCHES <span>TOP {current.top_k?.length || 1}</span></div>{(current.top_k || [{ class: current.predicted_class, confidence }]).map((guess, i) => <div className="prediction-row" key={`${guess.class}-${i}`}><span className={`prediction-rank ${i === 0 ? 'first' : ''}`}>{String(i + 1).padStart(2, '0')}</span><span className="prediction-name">{pretty(guess.class)}</span><span className="prediction-percent">{percent(guess.confidence)}</span></div>)}</div></div> : <div className="empty-result"><div className="empty-illustration"><span><Icon name="leaf" size={34}/></span><i/><i/><i/></div><strong>Insight starts with a leaf</strong><p>Upload an image and AgroScan will return its best match with confidence scores.</p></div>}
             <div className="result-foot"><Icon name="pulse" size={15}/><span>{current?.model_version ? `Model version ${current.model_version}` : 'Predictions are decision support, not a diagnosis.'}</span></div>
+            {current?.prediction_id && <div className="feedback-card"><div><strong>Can you verify this prediction?</strong><span>Your feedback helps measure live accuracy.</span></div>{feedbackSaved ? <div className="feedback-success">Feedback saved. Live metrics updated.</div> : <><div className="feedback-actions"><button disabled={feedbackBusy} onClick={() => submitFeedback(current.predicted_class)}>Correct</button><label>Actual class<select value={feedbackClass || current.predicted_class} onChange={(e) => setFeedbackClass(e.target.value)}>{(ready?.classes || analytics?.model?.classes || []).map((name) => <option key={name} value={name}>{pretty(name)}</option>)}</select></label><button className="feedback-correction" disabled={feedbackBusy} onClick={() => submitFeedback(feedbackClass || current.predicted_class)}>{feedbackBusy ? 'Saving…' : 'Submit correction'}</button></div>{feedbackError && <span className="feedback-error" role="alert">{feedbackError}</span>}</>}</div>}
           </article>
         </section>
         </div>
 
         <div className="page-view history-view">
-        <section className="page-intro"><div className="eyebrow"><span className="eyebrow-line"/> YOUR DEVICE</div><h1>Scan history</h1><p className="subtitle">Review and export predictions saved in this browser.</p></section>
-        <section className="panel activity-panel" id="activity"><div className="activity-heading"><div><div className="section-kicker">YOUR DEVICE</div><h2>Recent scans</h2></div><div className="history-tools"><span className="local-badge"><span/> Stored locally</span><button onClick={exportHistory} disabled={!history.length}>Export CSV</button><button onClick={clearHistory} disabled={!history.length}>Clear</button></div></div>{history.length ? <div className="activity-table"><div className="table-head"><span>PLANT / CONDITION</span><span>IMAGE</span><span>CONFIDENCE</span><span>WHEN</span><span>STATUS</span></div>{history.slice(0, showAllHistory ? 12 : 5).map((item, i) => <div className="table-row" key={`${item.createdAt}-${i}`}><span className="table-condition"><i className="table-leaf"><Icon name="leaf" size={16}/></i><strong>{pretty(item.predicted_class)}</strong></span><span className="table-file">{item.filename}</span><span className="table-confidence">{percent(item.confidence)}</span><span className="table-date">{new Date(item.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span><span><span className={`table-status ${item.low_confidence ? 'review' : ''}`}><i/>{item.low_confidence ? 'Review' : 'Analyzed'}</span></span></div>)}</div> : <div className="empty-activity"><span><Icon name="clock" size={18}/></span><div><strong>No scans yet</strong><p>Results from this browser will appear here after your first analysis.</p></div></div>}<div className="table-note">Recent scan history is saved in this browser only. {history.length > 5 && <button className="text-button" onClick={() => setShowAllHistory(!showAllHistory)}>{showAllHistory ? "Show fewer" : "View all scans"}</button>}</div></section>
+        <section className="page-intro"><div className="eyebrow"><span className="eyebrow-line"/> YOUR WORKSPACE</div><h1>Scan history</h1><p className="subtitle">Review recent scans and clear the shared live data used throughout the dashboard.</p></section>
+        <section className="panel activity-panel" id="activity"><div className="activity-heading"><div><div className="section-kicker">RECENT ACTIVITY</div><h2>Recent scans</h2></div><div className="history-tools"><span className="local-badge"><span/> Browser history</span><button onClick={exportHistory} disabled={!history.length}>Export CSV</button><button onClick={clearHistory} disabled={clearBusy}>{clearBusy ? 'Clearing…' : 'Clear all scans'}</button></div></div>{history.length ? <div className="activity-table"><div className="table-head"><span>PLANT / CONDITION</span><span>IMAGE</span><span>CONFIDENCE</span><span>WHEN</span><span>STATUS</span></div>{history.slice(0, showAllHistory ? 12 : 5).map((item, i) => <div className="table-row" key={`${item.createdAt}-${i}`}><span className="table-condition"><i className="table-leaf"><Icon name="leaf" size={16}/></i><strong>{pretty(item.predicted_class)}</strong></span><span className="table-file">{item.filename}</span><span className="table-confidence">{percent(item.confidence)}</span><span className="table-date">{new Date(item.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span><span><span className={`table-status ${item.low_confidence ? 'review' : ''}`}><i/>{item.low_confidence ? 'Review' : 'Analyzed'}</span></span></div>)}</div> : <div className="empty-activity"><span><Icon name="clock" size={18}/></span><div><strong>No browser scans yet</strong><p>New results will appear here after analysis. Server scan totals are shown on Overview.</p></div></div>}{clearError && <div className="feedback-error" role="alert">{clearError}</div>}<div className="table-note">This page lists recent scans saved in this browser. Clear all scans also resets server prediction logs, verified feedback, and generated monitoring summaries for every dashboard page. Saved offline benchmark metrics and the drift reference baseline remain because they describe evaluation data, not live scans. {history.length > 5 && <button className="text-button" onClick={() => setShowAllHistory(!showAllHistory)}>{showAllHistory ? "Show fewer" : "View all scans"}</button>}</div></section>
         </div>
         <div className="page-view performance-view">
-          <section className="page-intro"><div className="eyebrow"><span className="eyebrow-line"/> EVALUATION REPORTS</div><h1>Model performance</h1><p className="subtitle">Held-out evaluation metrics from the committed model reports.</p></section>
-          <section className="performance-summary">
-            <article className="panel score-card"><span>VALIDATION ACCURACY</span><strong>{analytics?.evaluation?.validation_accuracy != null ? percent(analytics.evaluation.validation_accuracy) : '—'}</strong><small>{analytics?.evaluation?.validation_samples ?? '—'} validation images</small></article>
-            <article className="panel score-card"><span>HELD-OUT TEST ACCURACY</span><strong>{analytics?.evaluation?.test_accuracy != null ? percent(analytics.evaluation.test_accuracy) : '—'}</strong><small>{analytics?.evaluation?.test_samples ?? '—'} test images</small></article>
-            <article className="panel score-card"><span>TEST MACRO F1</span><strong>{analytics?.evaluation?.test_macro_f1 != null ? percent(analytics.evaluation.test_macro_f1) : '—'}</strong><small>Balanced across disease classes</small></article>
-            <article className="panel score-card"><span>V5 BASELINE TOP-1</span><strong>{analytics?.evaluation?.baseline?.test_accuracy != null ? percent(analytics.evaluation.baseline.test_accuracy) : '—'}</strong><small>{analytics?.evaluation?.baseline?.test_samples ?? '—'} PlantDoc test images</small></article>
+          <section className="page-intro"><div className="eyebrow"><span className="eyebrow-line"/> LIVE INFERENCE METRICS</div><h1>Model performance</h1><p className="subtitle">Metrics update from current prediction traffic and verified feedback.</p></section>
+          <section className="performance-summary live-performance-summary">
+            <article className="panel score-card"><span>LIVE PREDICTIONS</span><strong>{analytics?.total_predictions ?? 'N/A'}</strong><small>Logged by the inference API</small></article>
+            <article className="panel score-card"><span>VERIFIED LABELS</span><strong>{analytics?.live_performance?.labeled_predictions ?? 0}</strong><small>Predictions checked by a user</small></article>
+            <article className="panel score-card"><span>LIVE ACCURACY</span><strong>{analytics?.live_performance?.accuracy != null ? percent(analytics.live_performance.accuracy) : 'Awaiting labels'}</strong><small>Only verified predictions count</small></article>
+            <article className="panel score-card"><span>LIVE MACRO F1</span><strong>{analytics?.live_performance?.macro_f1 != null ? percent(analytics.live_performance.macro_f1) : 'Awaiting labels'}</strong><small>Calculated from verified labels</small></article>
+            <article className="panel score-card"><span>MEAN CONFIDENCE</span><strong>{analytics?.average_confidence != null ? percent(analytics.average_confidence) : 'N/A'}</strong><small>Current prediction log window</small></article>
+            <article className="panel score-card"><span>LOW-CONFIDENCE RATE</span><strong>{analytics?.low_confidence_rate != null ? percent(analytics.low_confidence_rate) : 'N/A'}</strong><small>Current prediction log window</small></article>
+            <article className="panel score-card"><span>AVERAGE LATENCY</span><strong>{analytics?.average_latency_ms != null ? `${analytics.average_latency_ms} ms` : 'N/A'}</strong><small>Per-image inference time</small></article>
+            <article className="panel score-card"><span>P95 LATENCY</span><strong>{analytics?.p95_latency_ms != null ? `${analytics.p95_latency_ms} ms` : 'N/A'}</strong><small>Current prediction log window</small></article>
           </section>
-          <section className="panel performance-panel"><div className="performance-heading"><div><div className="section-kicker">CLASS-LEVEL RESULTS</div><h2>Held-out test breakdown</h2><p>Precision, recall and F1 score for each class. Support is the number of test images.</p></div><span className="dataset-badge">PlantDoc test</span></div>
-            {analytics?.evaluation?.test_report && Object.keys(analytics.evaluation.test_report).length ? <div className="performance-table-wrap"><table className="performance-table"><thead><tr><th>Disease class</th><th>Precision</th><th>Recall</th><th>F1 score</th><th>Images</th></tr></thead><tbody>{Object.entries(analytics.evaluation.test_report).filter(([name, row]) => typeof row === 'object' && !name.toLowerCase().includes('avg') && row?.['f1-score'] != null).map(([name, row]) => <tr key={name}><td>{pretty(name)}</td><td>{percent(row.precision)}</td><td>{percent(row.recall)}</td><td><span className="f1-cell"><i><b style={{ width: percent(row['f1-score']) }}/></i>{percent(row['f1-score'])}</span></td><td>{Math.round(row.support)}</td></tr>)}</tbody></table></div> : <div className="empty-activity"><span><Icon name="pulse" size={18}/></span><div><strong>Evaluation report unavailable</strong><p>Run the evaluation pipeline to populate classification metrics.</p></div></div>}
-            <div className="performance-note">The candidate model’s test set contains a small number of field images. Treat these scores as a comparison signal, not a guarantee of field accuracy. See reports/metrics.json and reports/classification_report.json for source results.</div>
+          <section className="panel alert-panel" aria-live="polite">
+            <div className="performance-heading"><div><div className="section-kicker">LIVE MODEL WATCH</div><h2>Signals and explanations</h2><p>Alerts recalculate with dashboard data. A drift signal is a change to inputs or predictions; verified accuracy is the direct quality signal.</p></div><span className="dataset-badge">{analytics?.live_alerts?.filter((item) => item.severity === 'warning').length || 0} active warnings</span></div>
+            {analytics?.live_alerts?.length ? <div className="alert-list">{analytics.live_alerts.map((item) => <article className={`signal-card ${item.severity}`} key={item.id}><div className="signal-top"><span className="signal-category">{item.category}</span><strong>{item.title}</strong></div><p>{item.explanation}</p><div className="signal-evidence"><b>Evidence</b> {item.evidence}</div><div className="signal-action"><b>Next step</b> {item.action}</div></article>)}</div> : <div className="signal-clear"><strong>No configured warnings are active.</strong><p>Live measurements are below their warning thresholds. Keep collecting verified feedback; this does not guarantee future performance.</p></div>}
+            <div className="signal-footnote">Thresholds come from configs/monitoring.yaml. Accuracy alerts require at least {analytics?.alert_thresholds?.min_labeled_predictions ?? 20} verified predictions; drift alerts require at least {analytics?.alert_thresholds?.min_predictions ?? 50} recent predictions and a reference baseline.</div>
           </section>
-          <section className="panel comparison-panel"><div><div className="section-kicker">CANDIDATE VS BASELINE</div><h2>PlantDoc top-1 comparison</h2><p>Current pipeline candidate against the existing v5 model on the same 72-image test split.</p></div><div className="comparison-bars"><div><span>Pipeline candidate</span><i><b style={{ width: percent(analytics?.evaluation?.test_accuracy) }}/></i><strong>{analytics?.evaluation?.test_accuracy != null ? percent(analytics.evaluation.test_accuracy) : '—'}</strong></div><div><span>Existing v5 baseline</span><i><b className="baseline-bar" style={{ width: percent(analytics?.evaluation?.baseline?.test_accuracy) }}/></i><strong>{analytics?.evaluation?.baseline?.test_accuracy != null ? percent(analytics.evaluation.baseline.test_accuracy) : '—'}</strong></div></div></section>
+          <section className="panel performance-panel"><div className="performance-heading"><div><div className="section-kicker">ONLINE EVALUATION</div><h2>Verified class-level results</h2><p>Correctness is computed only after a user confirms or corrects a prediction.</p></div><span className="dataset-badge">{analytics?.live_performance?.labeled_predictions || 0} verified</span></div>
+            {analytics?.live_performance?.per_class?.length ? <div className="performance-table-wrap"><table className="performance-table"><thead><tr><th>Disease class</th><th>Precision</th><th>Recall</th><th>F1 score</th><th>Labels</th></tr></thead><tbody>{analytics.live_performance.per_class.map((row) => <tr key={row.class}><td>{pretty(row.class)}</td><td>{percent(row.precision)}</td><td>{percent(row.recall)}</td><td><span className="f1-cell"><i><b style={{ width: percent(row.f1) }}/></i>{percent(row.f1)}</span></td><td>{row.support}</td></tr>)}</tbody></table></div> : <div className="live-empty"><span className="upload-icon"><Icon name="check" size={20}/></span><strong>No verified predictions yet</strong><p>After a scan, mark the result as correct or submit the actual class. Accuracy and F1 will populate from that feedback.</p><button className="primary-button" onClick={() => setActivePage('analyze')}>Analyze a leaf <Icon name="arrow" size={15}/></button></div>}
+            <div className="performance-note">Prediction confidence and class mix are live signals, not ground-truth accuracy. Verify predictions before using accuracy and F1 as quality measures.</div>
+          </section>
+          <details className="panel offline-benchmark"><summary>View saved offline evaluation benchmark</summary><div className="benchmark-grid"><div><span>Validation accuracy</span><strong>{analytics?.evaluation?.validation_accuracy != null ? percent(analytics.evaluation.validation_accuracy) : 'N/A'}</strong></div><div><span>Held-out test accuracy</span><strong>{analytics?.evaluation?.test_accuracy != null ? percent(analytics.evaluation.test_accuracy) : 'N/A'}</strong></div><div><span>Test macro F1</span><strong>{analytics?.evaluation?.test_macro_f1 != null ? percent(analytics.evaluation.test_macro_f1) : 'N/A'}</strong></div><div><span>Existing v5 test accuracy</span><strong>{analytics?.evaluation?.baseline?.test_accuracy != null ? percent(analytics.evaluation.baseline.test_accuracy) : 'N/A'}</strong></div></div><p>These are saved evaluation reports, not live traffic metrics. Source: reports/metrics.json and reports/v5_plantdoc_metrics.json.</p></details>
         </div>
         <div className="page-view mlops-view">
           <section className="page-intro"><div className="eyebrow"><span className="eyebrow-line"/> EXPERIMENTS & ORCHESTRATION</div><h1>MLOps consoles</h1><p className="subtitle">Experiment tracking and pipeline orchestration dashboards.</p></section>
