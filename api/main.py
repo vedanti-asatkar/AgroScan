@@ -286,8 +286,14 @@ def dashboard_data():
                 "category": "Verified performance",
                 "severity": "warning",
                 "title": "Verified accuracy is below its configured floor",
-                "explanation": "This measures correctness on user-verified predictions. A drop can be caused by drift, label issues, or model limitations; it does not identify the cause by itself.",
-                "evidence": f"{correct}/{len(feedback_rows)} correct ({live_accuracy:.1%}); configured floor {limit:.1%}; minimum sample {min_labels} met.",
+                "explanation": (
+                    "This measures correctness on user-verified predictions. A drop can be caused by drift, "
+                    "label issues, or model limitations; it does not identify the cause by itself."
+                ),
+                "evidence": (
+                    f"{correct}/{len(feedback_rows)} correct ({live_accuracy:.1%}); "
+                    f"configured floor {limit:.1%}; minimum sample {min_labels} met."
+                ),
                 "action": "Review the verified examples and labels, then investigate input or class-specific changes.",
             })
     elif len(feedback_rows) < min_labels:
@@ -296,7 +302,10 @@ def dashboard_data():
             "category": "Verified performance",
             "severity": "info",
             "title": "More verified labels are needed",
-            "explanation": "Live accuracy is suppressed until the configured minimum sample is reached, to avoid reacting to a few labels.",
+            "explanation": (
+                "Live accuracy is suppressed until the configured minimum sample is reached, "
+                "to avoid reacting to a few labels."
+            ),
             "evidence": f"{len(feedback_rows)}/{min_labels} verified predictions.",
             "action": "Keep verifying prediction results; confidence alone is not accuracy.",
         })
@@ -309,8 +318,14 @@ def dashboard_data():
             live_alerts.append({
                 "id": "low_confidence_rate", "category": "Prediction signal", "severity": "warning",
                 "title": "Low-confidence predictions are elevated",
-                "explanation": "This can indicate unfamiliar or ambiguous inputs. It is an early warning signal, not a direct measurement of correctness.",
-                "evidence": f"{low_count}/{len(rows)} predictions ({low_rate:.1%}) are below the model confidence threshold; configured warning {float(low_limit):.1%}.",
+                "explanation": (
+                    "This can indicate unfamiliar or ambiguous inputs. It is an early warning signal, "
+                    "not a direct measurement of correctness."
+                ),
+                "evidence": (
+                    f"{low_count}/{len(rows)} predictions ({low_rate:.1%}) are below the model "
+                    f"confidence threshold; configured warning {float(low_limit):.1%}."
+                ),
                 "action": "Review recent low-confidence images and collect verified labels.",
             })
 
@@ -323,14 +338,24 @@ def dashboard_data():
         if reference and brightness and reference.get("brightness_mean") is not None:
             ref_mean = float(reference["brightness_mean"])
             ref_std = float(reference.get("brightness_std") or 0)
-            z = abs(sum(brightness) / len(brightness) - ref_mean) / ref_std if ref_std else (0 if sum(brightness) / len(brightness) == ref_mean else float("inf"))
+            current_mean = sum(brightness) / len(brightness)
+            z = abs(current_mean - ref_mean) / ref_std if ref_std else (
+                0 if current_mean == ref_mean else float("inf")
+            )
             z_limit = alert_cfg.get("brightness_drift_zscore_warn")
             if z_limit is not None and z > float(z_limit):
                 live_alerts.append({
                     "id": "brightness_drift", "category": "Input drift", "severity": "warning",
                     "title": "Image brightness shifted from the reference period",
-                    "explanation": "This detects a change in one input feature. It suggests possible data drift, but does not prove model quality has fallen.",
-                    "evidence": f"Current mean {sum(brightness) / len(brightness):.2f} vs reference {ref_mean:.2f}; z-score {z:.2f}, configured warning {float(z_limit):.2f}; {len(brightness)} images.",
+                    "explanation": (
+                        "This detects a change in one input feature. It suggests possible data drift, "
+                        "but does not prove model quality has fallen."
+                    ),
+                    "evidence": (
+                        f"Current mean {current_mean:.2f} vs reference {ref_mean:.2f}; "
+                        f"z-score {z:.2f}, configured warning {float(z_limit):.2f}; "
+                        f"{len(brightness)} images."
+                    ),
                     "action": "Check capture conditions and review verified accuracy alongside this input shift.",
                 })
         reference_mix = (reference or {}).get("class_mix") or {}
@@ -344,9 +369,18 @@ def dashboard_data():
                 live_alerts.append({
                     "id": "class_mix_shift", "category": "Prediction drift", "severity": "warning",
                     "title": "Predicted class mix differs from the reference",
-                    "explanation": "The proportions of predicted classes have shifted. This may reflect changed field conditions, traffic mix, or model behavior; predictions are not ground-truth labels.",
-                    "evidence": f"Total variation distance {tv:.3f}; configured investigation threshold {float(tv_limit):.3f}; {total} predictions.",
-                    "action": "Compare class-specific verified results and inspect representative images before deciding on retraining.",
+                    "explanation": (
+                        "The proportions of predicted classes have shifted. This may reflect changed field "
+                        "conditions, traffic mix, or model behavior; predictions are not ground-truth labels."
+                    ),
+                    "evidence": (
+                        f"Total variation distance {tv:.3f}; configured investigation threshold "
+                        f"{float(tv_limit):.3f}; {total} predictions."
+                    ),
+                    "action": (
+                        "Compare class-specific verified results and inspect representative images "
+                        "before deciding on retraining."
+                    ),
                 })
 
         p95_limit = alert_cfg.get("latency_p95_ms_warn")
@@ -355,7 +389,10 @@ def dashboard_data():
                 "id": "latency_p95", "category": "Service health", "severity": "warning",
                 "title": "Inference latency is above its configured limit",
                 "explanation": "This is a serving performance signal, separate from prediction quality or model drift.",
-                "evidence": f"p95 latency {sorted_latency[p95_index]:.1f} ms; configured limit {float(p95_limit):.1f} ms; {len(sorted_latency)} timings.",
+                "evidence": (
+                    f"p95 latency {sorted_latency[p95_index]:.1f} ms; "
+                    f"configured limit {float(p95_limit):.1f} ms; {len(sorted_latency)} timings."
+                ),
                 "action": "Inspect API resource use and recent deployment or traffic changes.",
             })
 
