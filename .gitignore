@@ -10,3 +10,5 @@ logs/
 .smoke/
 .pytest_cache/
 .ruff_cache/
+ui/node_modules/
+ui/dist/

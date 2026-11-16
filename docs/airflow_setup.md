@@ -29,6 +29,6 @@ ls reports/monitoring     # healthy_report.json or retrain_decision.json, plus s
 ## Real mode (after A's stages merge)
 
 `unset AGROSCAN_DAG_MODE` (or `export AGROSCAN_DAG_MODE=real`), `dvc pull`, then `airflow dags test agroscan_pipeline 2025-01-05`.
-For the web UI: `airflow standalone`, open http://localhost:8080, unpause `agroscan_pipeline`.
+For the web UI: `airflow standalone`, open http://localhost:8080, unpause `agroscan_pipeline`. The React dashboard's **MLOps consoles** section embeds this UI by default; Airflow 2.10 allows framed rendering unless `AIRFLOW__WEBSERVER__X_FRAME_ENABLED` is disabled. The dashboard also has an **Open in new tab** link if you prefer the standalone Airflow page.
 
 Note: do **not** add an `__init__.py` to the repo's `airflow/` folder; it would shadow the installed package.

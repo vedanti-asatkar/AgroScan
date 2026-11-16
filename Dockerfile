@@ -1,3 +1,14 @@
+FROM node:22-alpine AS frontend
+
+WORKDIR /frontend
+ARG VITE_MLFLOW_URL=http://localhost:5000
+ARG VITE_AIRFLOW_URL=http://localhost:8080
+ENV VITE_MLFLOW_URL=$VITE_MLFLOW_URL VITE_AIRFLOW_URL=$VITE_AIRFLOW_URL
+COPY ui/package*.json ./
+RUN npm ci
+COPY ui/ ./
+RUN npm run build
+
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -8,7 +19,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/__init__.py src/preprocess.py ./src/
 COPY api/ ./api/
-COPY ui/ ./ui/
+COPY reports/metrics.json reports/classification_report.json reports/v5_plantdoc_metrics.json ./reports/
+COPY --from=frontend /frontend/dist ./ui/dist
 # Model artifacts come from `dvc pull` / `dvc repro` (model.keras + classes.json)
 COPY models/ ./models/
 

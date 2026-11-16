@@ -9,4 +9,6 @@ mlflow.db
 notebooks
 tests
 __pycache__
+ui/node_modules
+ui/dist
 models/*.dvc

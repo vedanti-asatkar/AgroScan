@@ -35,7 +35,7 @@ flowchart LR
 
   subgraph serving["Inference and monitoring"]
     servingmeta --> api["FastAPI<br/>api/main.py"]
-    api --> ui["ui/index.html<br/>GET /ui/"]
+    api --> ui["React dashboard<br/>GET /ui/"]
     api --> predlog["logs/predictions.jsonl"]
     predlog --> monitor["src/monitor_logs.py<br/>configs/monitoring.yaml"]
     metrics --> monitor
@@ -67,7 +67,7 @@ flowchart LR
 
 `api/main.py` checks model metadata in this order: `models/model_meta.json`, then `models/model_meta.v5.json`; if neither exists, it falls back to `models/model.keras` and `models/classes.json`. Metadata selects the model file, class-name file, image size, input range, center-crop behavior, confidence threshold, and top-k count. The shared preprocessing code is `src/preprocess.py`.
 
-The API routes are `/`, `/health`, `/ready`, `POST /predict`, and the static browser UI under `/ui/`. `/health` is liveness; `/ready` is the model-loaded check. The API appends summaries to `logs/predictions.jsonl`; `src.monitor_logs` reads that log and can also use `reports/metrics.json`, `reports/drift.json`, and `configs/monitoring.yaml`.
+The API routes are `/`, `/health`, `/ready`, `/dashboard`, `POST /predict`, and the static React UI under `/ui/`. `/health` is liveness; `/ready` is the model-loaded check; `/dashboard` summarizes the prediction log and reads evaluation and monitoring reports for dashboard context. The API appends summaries to `logs/predictions.jsonl`; `src.monitor_logs` reads that log and can also use `reports/metrics.json`, `reports/drift.json`, and `configs/monitoring.yaml`.
 
 Offline drift in `src/drift_check.py` compares image brightness and channel means from prepared train and test samples. It does not read API logs. `src.monitor_logs.py` is the separate prediction-log monitor.
 
