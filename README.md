@@ -1,6 +1,6 @@
 # AgroScan
 
-AgroScan is an MLOps course project for classifying pepper, potato, and tomato leaf photos into eight disease/healthy classes. It uses a MobileNetV2 model, DVC pipeline and data versioning, MLflow tracking, a FastAPI inference service, a browser UI, offline and prediction-log monitoring, Airflow scheduling, and GitHub Actions CI/container delivery.
+AgroScan is an MLOps course project for classifying pepper, potato, and tomato leaf photos into eight disease/healthy classes. It uses a MobileNetV2 model, DVC pipeline and data versioning, MLflow tracking, a FastAPI inference service, a React dashboard, offline and prediction-log monitoring, Airflow scheduling, and GitHub Actions CI/container delivery.
 
 ## Quickstart
 
@@ -35,7 +35,17 @@ docker compose up --build
 make serve                                  # uvicorn api.main:app --port 8000
 ```
 
-Open the UI at <http://localhost:8000/ui/>. Available API routes are `/` (status), `/health` (liveness), `/ready` (model loaded and version), and `POST /predict` (multipart field `file`). Example:
+The production Docker image builds the React dashboard and serves it from <http://localhost:8000/ui/>. The dashboard's **MLOps consoles** section embeds MLflow and Airflow at `http://localhost:5000` and `http://localhost:8080`, with links to open either console separately. Compose starts MLflow with cross-origin framing enabled for this local dashboard and binds it to loopback; start Airflow separately using the [Airflow guide](docs/airflow_setup.md). For other hosts, set `VITE_MLFLOW_URL` and `VITE_AIRFLOW_URL` before rebuilding the frontend/image. For frontend development, run the API with `make serve`, then in another terminal:
+
+```bash
+cd ui
+npm install
+npm run dev
+```
+
+Vite proxies `/health`, `/ready`, and `/predict` to FastAPI. For a local production preview, run `npm install` and `npm run build` from `ui/` before `make serve`.
+
+The dashboard keeps recent scan summaries in the current browser's local storage; uploaded images are not stored in the scan history. It has separate pages for overview, leaf analysis, scan history, model performance, and MLOps consoles. The model performance page shows validation and held-out metrics plus per-class results from the evaluation reports. Available API routes are `/` (status), `/health` (liveness), `/ready` (model loaded and version), `/dashboard` (live dashboard and evaluation summary), and `POST /predict` (multipart field `file`). Example:
 
 For predictions, pull the DVC-managed model before building/running the API. Without a model artifact, the service can answer `/health`, but `/ready` returns 503 and `/predict` is unavailable.
 
@@ -53,7 +63,7 @@ The API logs prediction summaries to `logs/predictions.jsonl`. To summarize thos
 |---|---|
 | `dvc.yaml`, `params.yaml`, `params.ci.yaml` | Pipeline stages and production/smoke parameters |
 | `src/` | Data preparation and validation, training, evaluation, export, offline drift and prediction-log monitoring |
-| `api/main.py`, `ui/index.html` | FastAPI routes and browser interface |
+| `api/main.py`, `ui/` | FastAPI routes and React dashboard (Vite source; production build served at `/ui/`) |
 | `models/model_meta.v5.json`, `models/model_meta.json` | v5 metadata and generated serving metadata; `model_meta.json` is produced by `export` |
 | `scripts/batch_predict.py` | Folder inference: `python scripts/batch_predict.py --images <dir> --out <csv>` |
 | `airflow/dags/agroscan_pipeline.py` | Weekly `agroscan_pipeline` DAG |
