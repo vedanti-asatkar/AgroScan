@@ -8,6 +8,7 @@ import io
 import json
 import logging
 import os
+import threading
 import time
 from collections import Counter, deque
 from contextlib import asynccontextmanager
@@ -16,6 +17,7 @@ from pathlib import Path
 
 import keras
 import numpy as np
+import yaml
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -34,6 +36,16 @@ REPORT_DIR = Path(os.getenv("REPORT_DIR", "reports"))
 MAX_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", 10 * 1024 * 1024))
 
 state = {"model": None, "classes": None, "cfg": None, "registry_model": None, "registry_version": None}
+history_lock = threading.RLock()
+
+
+def load_monitor_config():
+    path = Path(os.getenv("MONITORING_CONFIG", "configs/monitoring.yaml"))
+    try:
+        return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError):
+        log.exception("could not read monitoring configuration %s", path)
+        return {}
 
 
 def read_class_names(path):
@@ -257,9 +269,96 @@ def dashboard_data():
     correct = sum(row["predicted"] == row["actual"] for row in feedback_rows)
     live_accuracy = correct / len(feedback_rows) if feedback_rows else None
     live_macro_f1 = sum(row["f1"] for row in per_class) / len(per_class) if per_class else None
-
     sorted_latency = sorted(latencies)
     p95_index = int(round((len(sorted_latency) - 1) * 0.95)) if sorted_latency else None
+
+    # Build explainable, current warnings from configured thresholds and observed logs.
+    monitor_cfg = load_monitor_config()
+    alert_cfg = monitor_cfg.get("alerts", {})
+    window_cfg = monitor_cfg.get("window", {})
+    live_alerts = []
+    min_labels = int(window_cfg.get("min_labeled_predictions", 20))
+    if len(feedback_rows) >= min_labels and live_accuracy is not None:
+        limit = float(alert_cfg.get("live_accuracy_warn", 0.60))
+        if live_accuracy < limit:
+            live_alerts.append({
+                "id": "live_accuracy",
+                "category": "Verified performance",
+                "severity": "warning",
+                "title": "Verified accuracy is below its configured floor",
+                "explanation": "This measures correctness on user-verified predictions. A drop can be caused by drift, label issues, or model limitations; it does not identify the cause by itself.",
+                "evidence": f"{correct}/{len(feedback_rows)} correct ({live_accuracy:.1%}); configured floor {limit:.1%}; minimum sample {min_labels} met.",
+                "action": "Review the verified examples and labels, then investigate input or class-specific changes.",
+            })
+    elif len(feedback_rows) < min_labels:
+        live_alerts.append({
+            "id": "live_accuracy_sample",
+            "category": "Verified performance",
+            "severity": "info",
+            "title": "More verified labels are needed",
+            "explanation": "Live accuracy is suppressed until the configured minimum sample is reached, to avoid reacting to a few labels.",
+            "evidence": f"{len(feedback_rows)}/{min_labels} verified predictions.",
+            "action": "Keep verifying prediction results; confidence alone is not accuracy.",
+        })
+
+    min_predictions = int(window_cfg.get("min_predictions", 50))
+    if len(rows) >= min_predictions:
+        low_rate = low_count / len(rows) if rows else None
+        low_limit = alert_cfg.get("low_confidence_rate_warn")
+        if low_rate is not None and low_limit is not None and low_rate > float(low_limit):
+            live_alerts.append({
+                "id": "low_confidence_rate", "category": "Prediction signal", "severity": "warning",
+                "title": "Low-confidence predictions are elevated",
+                "explanation": "This can indicate unfamiliar or ambiguous inputs. It is an early warning signal, not a direct measurement of correctness.",
+                "evidence": f"{low_count}/{len(rows)} predictions ({low_rate:.1%}) are below the model confidence threshold; configured warning {float(low_limit):.1%}.",
+                "action": "Review recent low-confidence images and collect verified labels.",
+            })
+
+        reference_path = Path(monitor_cfg.get("paths", {}).get("reference", "reports/monitoring/reference.json"))
+        try:
+            reference = json.loads(reference_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            reference = None
+        brightness = [float(r["brightness"]) for r in rows if isinstance(r.get("brightness"), (int, float))]
+        if reference and brightness and reference.get("brightness_mean") is not None:
+            ref_mean = float(reference["brightness_mean"])
+            ref_std = float(reference.get("brightness_std") or 0)
+            z = abs(sum(brightness) / len(brightness) - ref_mean) / ref_std if ref_std else (0 if sum(brightness) / len(brightness) == ref_mean else float("inf"))
+            z_limit = alert_cfg.get("brightness_drift_zscore_warn")
+            if z_limit is not None and z > float(z_limit):
+                live_alerts.append({
+                    "id": "brightness_drift", "category": "Input drift", "severity": "warning",
+                    "title": "Image brightness shifted from the reference period",
+                    "explanation": "This detects a change in one input feature. It suggests possible data drift, but does not prove model quality has fallen.",
+                    "evidence": f"Current mean {sum(brightness) / len(brightness):.2f} vs reference {ref_mean:.2f}; z-score {z:.2f}, configured warning {float(z_limit):.2f}; {len(brightness)} images.",
+                    "action": "Check capture conditions and review verified accuracy alongside this input shift.",
+                })
+        reference_mix = (reference or {}).get("class_mix") or {}
+        if reference_mix and class_counts:
+            total = sum(class_counts.values())
+            current_mix = {name: count / total for name, count in class_counts.items()}
+            keys = set(current_mix) | set(reference_mix)
+            tv = 0.5 * sum(abs(current_mix.get(name, 0) - float(reference_mix.get(name, 0))) for name in keys)
+            tv_limit = monitor_cfg.get("retrain", {}).get("class_mix_tv_distance_max")
+            if tv_limit is not None and tv > float(tv_limit):
+                live_alerts.append({
+                    "id": "class_mix_shift", "category": "Prediction drift", "severity": "warning",
+                    "title": "Predicted class mix differs from the reference",
+                    "explanation": "The proportions of predicted classes have shifted. This may reflect changed field conditions, traffic mix, or model behavior; predictions are not ground-truth labels.",
+                    "evidence": f"Total variation distance {tv:.3f}; configured investigation threshold {float(tv_limit):.3f}; {total} predictions.",
+                    "action": "Compare class-specific verified results and inspect representative images before deciding on retraining.",
+                })
+
+        p95_limit = alert_cfg.get("latency_p95_ms_warn")
+        if p95_index is not None and p95_limit is not None and sorted_latency[p95_index] > float(p95_limit):
+            live_alerts.append({
+                "id": "latency_p95", "category": "Service health", "severity": "warning",
+                "title": "Inference latency is above its configured limit",
+                "explanation": "This is a serving performance signal, separate from prediction quality or model drift.",
+                "evidence": f"p95 latency {sorted_latency[p95_index]:.1f} ms; configured limit {float(p95_limit):.1f} ms; {len(sorted_latency)} timings.",
+                "action": "Inspect API resource use and recent deployment or traffic changes.",
+            })
+
     return {
         "generated_at": now.isoformat(timespec="seconds"),
         "total_predictions": total_predictions,
@@ -302,6 +401,12 @@ def dashboard_data():
             "feedback_rate": round(len(feedback_rows) / len(rows), 4) if rows else None,
             "per_class": per_class,
             "prediction_ids": feedback_ids,
+        },
+        "live_alerts": live_alerts,
+        "alert_thresholds": {
+            "live_accuracy_warn": alert_cfg.get("live_accuracy_warn"),
+            "min_labeled_predictions": min_labels,
+            "min_predictions": min_predictions,
         },
         "monitoring": {
             "status": monitor.get("status"),
@@ -355,16 +460,33 @@ async def predict(file: UploadFile = File(...)):
     }
 
     try:  # prediction log feeds drift / quality monitoring
-        Path(PRED_LOG).parent.mkdir(parents=True, exist_ok=True)
-        with open(PRED_LOG, "a") as f:
-            f.write(json.dumps({"ts": event_ts, "model_version": cfg["version"],
-                                "top1_class": result["predicted_class"], "confidence": result["confidence"],
-                                "top3": result["top_k"], "low_confidence": result["low_confidence"],
-                                "latency_ms": round(latency_ms, 1), "brightness": round(brightness, 2)})
-                    + "\n")
+        with history_lock:
+            Path(PRED_LOG).parent.mkdir(parents=True, exist_ok=True)
+            with open(PRED_LOG, "a", encoding="utf-8") as f:
+                f.write(json.dumps({"ts": event_ts, "model_version": cfg["version"],
+                                    "top1_class": result["predicted_class"], "confidence": result["confidence"],
+                                    "top3": result["top_k"], "low_confidence": result["low_confidence"],
+                                    "latency_ms": round(latency_ms, 1), "brightness": round(brightness, 2)})
+                        + "\n")
     except OSError:
         log.warning("could not write prediction log")
     return JSONResponse(result)
+
+
+@app.delete("/history")
+def clear_scan_history():
+    """Clear shared live scan and feedback data so every dashboard view resets together."""
+    paths = [Path(PRED_LOG), Path(FEEDBACK_LOG), REPORT_DIR / "monitoring" / "summary.json",
+             REPORT_DIR / "monitoring" / "healthy_report.json",
+             REPORT_DIR / "monitoring" / "retrain_decision.json"]
+    try:
+        with history_lock:
+            for path in paths:
+                path.unlink(missing_ok=True)
+    except OSError as exc:
+        log.exception("could not clear scan history")
+        raise HTTPException(500, "could not clear all server scan data") from exc
+    return {"status": "cleared", "cleared": [str(path) for path in paths]}
 
 
 @app.post("/feedback")
@@ -394,24 +516,25 @@ def record_feedback(payload: PredictionFeedback):
 
     feedback_path = Path(FEEDBACK_LOG)
     try:
-        if feedback_path.exists():
-            with feedback_path.open(encoding="utf-8") as f:
-                for line in f:
-                    try:
-                        row = json.loads(line)
-                    except json.JSONDecodeError:
-                        continue
-                    if row.get("prediction_id") == payload.prediction_id:
-                        raise HTTPException(409, "feedback was already recorded for this prediction")
-        feedback_path.parent.mkdir(parents=True, exist_ok=True)
-        with feedback_path.open("a", encoding="utf-8") as f:
-            f.write(json.dumps({
-                "prediction_id": payload.prediction_id,
-                "predicted_class": prediction.get("top1_class"),
-                "actual_class": payload.actual_class,
-                "model_version": prediction.get("model_version"),
-                "ts": time.time(),
-            }) + "\n")
+        with history_lock:
+            if feedback_path.exists():
+                with feedback_path.open(encoding="utf-8") as f:
+                    for line in f:
+                        try:
+                            row = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        if row.get("prediction_id") == payload.prediction_id:
+                            raise HTTPException(409, "feedback was already recorded for this prediction")
+            feedback_path.parent.mkdir(parents=True, exist_ok=True)
+            with feedback_path.open("a", encoding="utf-8") as f:
+                f.write(json.dumps({
+                    "prediction_id": payload.prediction_id,
+                    "predicted_class": prediction.get("top1_class"),
+                    "actual_class": payload.actual_class,
+                    "model_version": prediction.get("model_version"),
+                    "ts": time.time(),
+                }) + "\n")
     except HTTPException:
         raise
     except OSError as exc:

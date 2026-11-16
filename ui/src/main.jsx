@@ -45,6 +45,8 @@ function App() {
   const [feedbackSaved, setFeedbackSaved] = useState(false);
   const [feedbackBusy, setFeedbackBusy] = useState(false);
   const [feedbackError, setFeedbackError] = useState('');
+  const [clearBusy, setClearBusy] = useState(false);
+  const [clearError, setClearError] = useState('');
   const pageTitles = { overview: 'Overview', analyze: 'New analysis', history: 'Scan history', performance: 'Model performance', mlops: 'MLOps consoles' };
 
   const refreshAnalytics = async () => {
@@ -113,9 +115,21 @@ function App() {
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a'); link.href = url; link.download = 'agroscan-scan-history.csv'; link.click(); URL.revokeObjectURL(url);
   };
-  const clearHistory = () => {
-    if (!history.length || !window.confirm('Clear all scan history saved in this browser?')) return;
-    localStorage.removeItem(HISTORY_KEY); setHistory([]); setResult(null);
+  const clearHistory = async () => {
+    if (clearBusy || !window.confirm('Clear all live scan and feedback data for this AgroScan server? This resets scan counts and live metrics for every dashboard page and user.')) return;
+    setClearBusy(true); setClearError('');
+    try {
+      const response = await fetch('/history', { method: 'DELETE' });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.detail || `Could not clear server scan data (${response.status}).`);
+      }
+      localStorage.removeItem(HISTORY_KEY);
+      setHistory([]); setResult(null); setShowAllHistory(false);
+      setFeedbackSaved(false); setFeedbackError('');
+      await refreshAnalytics();
+    } catch (e) { setClearError(e.message || 'Could not clear scan data.'); }
+    finally { setClearBusy(false); }
   };
   const current = result || history[0];
   const confidence = Number(current?.confidence || 0);
@@ -199,8 +213,8 @@ function App() {
         </div>
 
         <div className="page-view history-view">
-        <section className="page-intro"><div className="eyebrow"><span className="eyebrow-line"/> YOUR DEVICE</div><h1>Scan history</h1><p className="subtitle">Review and export predictions saved in this browser.</p></section>
-        <section className="panel activity-panel" id="activity"><div className="activity-heading"><div><div className="section-kicker">YOUR DEVICE</div><h2>Recent scans</h2></div><div className="history-tools"><span className="local-badge"><span/> Stored locally</span><button onClick={exportHistory} disabled={!history.length}>Export CSV</button><button onClick={clearHistory} disabled={!history.length}>Clear</button></div></div>{history.length ? <div className="activity-table"><div className="table-head"><span>PLANT / CONDITION</span><span>IMAGE</span><span>CONFIDENCE</span><span>WHEN</span><span>STATUS</span></div>{history.slice(0, showAllHistory ? 12 : 5).map((item, i) => <div className="table-row" key={`${item.createdAt}-${i}`}><span className="table-condition"><i className="table-leaf"><Icon name="leaf" size={16}/></i><strong>{pretty(item.predicted_class)}</strong></span><span className="table-file">{item.filename}</span><span className="table-confidence">{percent(item.confidence)}</span><span className="table-date">{new Date(item.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span><span><span className={`table-status ${item.low_confidence ? 'review' : ''}`}><i/>{item.low_confidence ? 'Review' : 'Analyzed'}</span></span></div>)}</div> : <div className="empty-activity"><span><Icon name="clock" size={18}/></span><div><strong>No scans yet</strong><p>Results from this browser will appear here after your first analysis.</p></div></div>}<div className="table-note">Recent scan history is saved in this browser only. {history.length > 5 && <button className="text-button" onClick={() => setShowAllHistory(!showAllHistory)}>{showAllHistory ? "Show fewer" : "View all scans"}</button>}</div></section>
+        <section className="page-intro"><div className="eyebrow"><span className="eyebrow-line"/> YOUR WORKSPACE</div><h1>Scan history</h1><p className="subtitle">Review recent scans and clear the shared live data used throughout the dashboard.</p></section>
+        <section className="panel activity-panel" id="activity"><div className="activity-heading"><div><div className="section-kicker">RECENT ACTIVITY</div><h2>Recent scans</h2></div><div className="history-tools"><span className="local-badge"><span/> Browser history</span><button onClick={exportHistory} disabled={!history.length}>Export CSV</button><button onClick={clearHistory} disabled={clearBusy}>{clearBusy ? 'Clearing…' : 'Clear all scans'}</button></div></div>{history.length ? <div className="activity-table"><div className="table-head"><span>PLANT / CONDITION</span><span>IMAGE</span><span>CONFIDENCE</span><span>WHEN</span><span>STATUS</span></div>{history.slice(0, showAllHistory ? 12 : 5).map((item, i) => <div className="table-row" key={`${item.createdAt}-${i}`}><span className="table-condition"><i className="table-leaf"><Icon name="leaf" size={16}/></i><strong>{pretty(item.predicted_class)}</strong></span><span className="table-file">{item.filename}</span><span className="table-confidence">{percent(item.confidence)}</span><span className="table-date">{new Date(item.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span><span><span className={`table-status ${item.low_confidence ? 'review' : ''}`}><i/>{item.low_confidence ? 'Review' : 'Analyzed'}</span></span></div>)}</div> : <div className="empty-activity"><span><Icon name="clock" size={18}/></span><div><strong>No browser scans yet</strong><p>New results will appear here after analysis. Server scan totals are shown on Overview.</p></div></div>}{clearError && <div className="feedback-error" role="alert">{clearError}</div>}<div className="table-note">This page lists recent scans saved in this browser. Clear all scans also resets server prediction logs, verified feedback, and generated monitoring summaries for every dashboard page. Saved offline benchmark metrics and the drift reference baseline remain because they describe evaluation data, not live scans. {history.length > 5 && <button className="text-button" onClick={() => setShowAllHistory(!showAllHistory)}>{showAllHistory ? "Show fewer" : "View all scans"}</button>}</div></section>
         </div>
         <div className="page-view performance-view">
           <section className="page-intro"><div className="eyebrow"><span className="eyebrow-line"/> LIVE INFERENCE METRICS</div><h1>Model performance</h1><p className="subtitle">Metrics update from current prediction traffic and verified feedback.</p></section>
@@ -213,6 +227,11 @@ function App() {
             <article className="panel score-card"><span>LOW-CONFIDENCE RATE</span><strong>{analytics?.low_confidence_rate != null ? percent(analytics.low_confidence_rate) : 'N/A'}</strong><small>Current prediction log window</small></article>
             <article className="panel score-card"><span>AVERAGE LATENCY</span><strong>{analytics?.average_latency_ms != null ? `${analytics.average_latency_ms} ms` : 'N/A'}</strong><small>Per-image inference time</small></article>
             <article className="panel score-card"><span>P95 LATENCY</span><strong>{analytics?.p95_latency_ms != null ? `${analytics.p95_latency_ms} ms` : 'N/A'}</strong><small>Current prediction log window</small></article>
+          </section>
+          <section className="panel alert-panel" aria-live="polite">
+            <div className="performance-heading"><div><div className="section-kicker">LIVE MODEL WATCH</div><h2>Signals and explanations</h2><p>Alerts recalculate with dashboard data. A drift signal is a change to inputs or predictions; verified accuracy is the direct quality signal.</p></div><span className="dataset-badge">{analytics?.live_alerts?.filter((item) => item.severity === 'warning').length || 0} active warnings</span></div>
+            {analytics?.live_alerts?.length ? <div className="alert-list">{analytics.live_alerts.map((item) => <article className={`signal-card ${item.severity}`} key={item.id}><div className="signal-top"><span className="signal-category">{item.category}</span><strong>{item.title}</strong></div><p>{item.explanation}</p><div className="signal-evidence"><b>Evidence</b> {item.evidence}</div><div className="signal-action"><b>Next step</b> {item.action}</div></article>)}</div> : <div className="signal-clear"><strong>No configured warnings are active.</strong><p>Live measurements are below their warning thresholds. Keep collecting verified feedback; this does not guarantee future performance.</p></div>}
+            <div className="signal-footnote">Thresholds come from configs/monitoring.yaml. Accuracy alerts require at least {analytics?.alert_thresholds?.min_labeled_predictions ?? 20} verified predictions; drift alerts require at least {analytics?.alert_thresholds?.min_predictions ?? 50} recent predictions and a reference baseline.</div>
           </section>
           <section className="panel performance-panel"><div className="performance-heading"><div><div className="section-kicker">ONLINE EVALUATION</div><h2>Verified class-level results</h2><p>Correctness is computed only after a user confirms or corrects a prediction.</p></div><span className="dataset-badge">{analytics?.live_performance?.labeled_predictions || 0} verified</span></div>
             {analytics?.live_performance?.per_class?.length ? <div className="performance-table-wrap"><table className="performance-table"><thead><tr><th>Disease class</th><th>Precision</th><th>Recall</th><th>F1 score</th><th>Labels</th></tr></thead><tbody>{analytics.live_performance.per_class.map((row) => <tr key={row.class}><td>{pretty(row.class)}</td><td>{percent(row.precision)}</td><td>{percent(row.recall)}</td><td><span className="f1-cell"><i><b style={{ width: percent(row.f1) }}/></i>{percent(row.f1)}</span></td><td>{row.support}</td></tr>)}</tbody></table></div> : <div className="live-empty"><span className="upload-icon"><Icon name="check" size={20}/></span><strong>No verified predictions yet</strong><p>After a scan, mark the result as correct or submit the actual class. Accuracy and F1 will populate from that feedback.</p><button className="primary-button" onClick={() => setActivePage('analyze')}>Analyze a leaf <Icon name="arrow" size={15}/></button></div>}
