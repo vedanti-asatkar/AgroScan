@@ -35,9 +35,12 @@ PRED_LOG = os.getenv("PREDICTION_LOG", "logs/predictions.jsonl")
 FEEDBACK_LOG = os.getenv("FEEDBACK_LOG", "logs/feedback.jsonl")
 REPORT_DIR = Path(os.getenv("REPORT_DIR", "reports"))
 MAX_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", 10 * 1024 * 1024))
-LIME_NUM_SAMPLES = max(50, int(os.getenv("LIME_NUM_SAMPLES", "200")))
-LIME_BATCH_SIZE = max(1, int(os.getenv("LIME_BATCH_SIZE", "32")))
-LIME_SUPERPIXELS = max(20, int(os.getenv("LIME_SUPERPIXELS", "80")))
+LIME_NUM_SAMPLES = max(16, int(os.getenv("LIME_NUM_SAMPLES", "32")))
+LIME_BATCH_SIZE = max(1, int(os.getenv("LIME_BATCH_SIZE", "64")))
+LIME_SUPERPIXELS = max(12, int(os.getenv("LIME_SUPERPIXELS", "30")))
+SHAP_MAX_EVALS = max(8, int(os.getenv("SHAP_MAX_EVALS", "16")))
+SHAP_BATCH_SIZE = max(1, int(os.getenv("SHAP_BATCH_SIZE", "32")))
+SHAP_IMAGE_SIZE = max(16, int(os.getenv("SHAP_IMAGE_SIZE", "32")))
 
 state = {"model": None, "classes": None, "cfg": None, "registry_model": None, "registry_version": None}
 history_lock = threading.RLock()
@@ -647,7 +650,13 @@ async def explain(file: UploadFile = File(...), method: str = Form(...)):
             except ImportError as exc:
                 raise HTTPException(503, "SHAP requires shap; install requirements-xai.txt") from exc
             try:
-                masker = shap.maskers.Image("blur(16,16)", pixels.shape)
+                # Pixel-level SHAP partitioning scales poorly with image dimensions.
+                # Explain a compact image and resize model inputs back to native size.
+                shap_size = min(SHAP_IMAGE_SIZE, *pixels.shape[:2])
+                shap_pixels = np.asarray(
+                    display.resize((shap_size, shap_size), Image.Resampling.BILINEAR), dtype=np.float32
+                )
+                masker = shap.maskers.Image("blur(8,8)", shap_pixels.shape)
             except ModuleNotFoundError as exc:
                 if exc.name == "cv2":
                     raise HTTPException(
@@ -656,21 +665,34 @@ async def explain(file: UploadFile = File(...), method: str = Form(...)):
                         "run 'python -m pip install opencv-python-headless' and restart the API.",
                     ) from exc
                 raise
-            explainer = shap.Explainer(_explanation_predict, masker, algorithm="partition",
-                                       output_names=state["classes"])
-            values = explainer(pixels[None], max_evals=160, batch_size=16)
+            # Explain only the predicted class. Explaining every output produces a
+            # much larger attribution tensor and spends time on classes not returned.
+            def _selected_class_predict(images):
+                model_pixels = keras.ops.image.resize(
+                    np.asarray(images, dtype=np.float32), pixels.shape[:2], interpolation="bilinear"
+                )
+                return _explanation_predict(model_pixels)[:, class_index:class_index + 1]
+
+            explainer = shap.Explainer(_selected_class_predict, masker, algorithm="partition",
+                                       output_names=[state["classes"][class_index]])
+            values = explainer(shap_pixels[None], max_evals=SHAP_MAX_EVALS, batch_size=SHAP_BATCH_SIZE)
             raw = np.asarray(values.values)
-            # SHAP image outputs are (batch, H, W, RGB, classes).
+            # SHAP image outputs are (batch, H, W, RGB, selected class).
             if raw.ndim == 5:
-                contribution = raw[0, ..., class_index].mean(axis=-1)
+                contribution = raw[0, ..., 0].mean(axis=-1)
             elif raw.ndim == 4:
                 contribution = raw[0].mean(axis=-1)
             else:
                 raise ValueError(f"unexpected SHAP image output shape {raw.shape}")
-            heat = np.asarray(contribution, dtype=np.float32)
+            heat = np.asarray(
+                Image.fromarray(np.asarray(contribution, dtype=np.float32)).resize(
+                    display.size, Image.Resampling.BILINEAR
+                ),
+                dtype=np.float32,
+            )
             explanation_uri = _overlay_png(display, heat, "shap")
             flat = heat.ravel()
-            metadata = {"method": "shap", "max_evals": 160,
+            metadata = {"method": "shap", "max_evals": SHAP_MAX_EVALS, "explanation_size": shap_size,
                         "positive_pixels": int(np.count_nonzero(flat > 0)),
                         "negative_pixels": int(np.count_nonzero(flat < 0)),
                         "positive_strength": round(float(np.maximum(heat, 0).sum()), 5),
