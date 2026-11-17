@@ -14,8 +14,8 @@ FROM python:3.11-slim
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1 TF_CPP_MIN_LOG_LEVEL=2
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt requirements-xai.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -r requirements-xai.txt
 
 COPY src/__init__.py src/preprocess.py ./src/
 COPY configs/monitoring.yaml ./configs/monitoring.yaml

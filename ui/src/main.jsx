@@ -32,6 +32,9 @@ function App() {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState('');
   const [result, setResult] = useState(null);
+  const [explanation, setExplanation] = useState(null);
+  const [explainBusy, setExplainBusy] = useState('');
+  const [explainError, setExplainError] = useState('');
   const [history, setHistory] = useState(readHistory);
   const [ready, setReady] = useState(null);
   const [analytics, setAnalytics] = useState(null);
@@ -82,7 +85,7 @@ function App() {
   const selectFile = (picked) => {
     if (!picked) return;
     if (!picked.type.startsWith('image/')) { setError('Choose a JPG, PNG, or other supported image file.'); return; }
-    setError(''); setFile(picked); setResult(null);
+    setError(''); setFile(picked); setResult(null); setExplanation(null); setExplainError('');
   };
 
   const analyze = async () => {
@@ -99,6 +102,7 @@ function App() {
       const data = await response.json();
       const item = { ...data, filename: file.name, createdAt: new Date().toISOString() };
       setResult(item);
+      setExplanation(null); setExplainError('');
       setFeedbackClass(data.predicted_class); setFeedbackSaved(false); setFeedbackError('');
       const next = [item, ...readHistory()].slice(0, 12);
       setHistory(next); localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
@@ -106,7 +110,22 @@ function App() {
     finally { setBusy(false); }
   };
 
-  const reset = () => { setFile(null); setResult(null); setError(''); if (inputRef.current) inputRef.current.value = ''; };
+  const explain = async (method) => {
+    if (!file || explainBusy) return;
+    setExplainBusy(method); setExplainError('');
+    try {
+      const form = new FormData(); form.append('file', file); form.append('method', method);
+      const response = await fetch('/explain', { method: 'POST', body: form });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.detail || `${method.toUpperCase()} explanation failed (${response.status}).`);
+      }
+      setExplanation(await response.json());
+    } catch (e) { setExplainError(e.message || 'Could not generate the explanation.'); }
+    finally { setExplainBusy(''); }
+  };
+
+  const reset = () => { setFile(null); setResult(null); setExplanation(null); setExplainError(''); setError(''); if (inputRef.current) inputRef.current.value = ''; };
   const exportHistory = () => {
     if (!history.length) return;
     const rows = [['timestamp', 'image', 'predicted_class', 'confidence', 'low_confidence', 'model_version']];
@@ -133,6 +152,8 @@ function App() {
   };
   const current = result || history[0];
   const confidence = Number(current?.confidence || 0);
+  const driftMonitor = analytics?.drift_monitor;
+  const driftStatusLabels = { insufficient_data: 'Collecting scans', baseline_missing: 'Baseline needed', partial_baseline: 'Partial baseline', warning: 'Drift signal detected', watching: 'Within monitored range' };
   const daily = analytics?.daily_predictions || [];
   const maxDaily = Math.max(1, ...daily.map((item) => item.count));
   const submitFeedback = async (actualClass) => {
@@ -187,6 +208,12 @@ function App() {
           <article className="panel analytics-panel mix-panel"><div className="analytics-heading"><div><div className="section-kicker">FIELD SIGNAL</div><h2>Most detected classes</h2></div><span className="analytics-period">LATEST 10K</span></div>{analytics?.class_distribution?.length ? <div className="mix-list">{analytics.class_distribution.slice(0, 5).map((item, index) => <div className="mix-item" key={item.class}><div className="mix-label"><span>{pretty(item.class)}</span><b>{item.count}</b></div><div className="mix-track"><i className={`mix-${index}`} style={{ width: `${Math.max(4, item.share * 100)}%` }}/></div></div>)}</div> : <div className="analytics-empty">Predictions will appear here after the first scan.</div>}<div className="chart-foot"><span>Distribution from API prediction logs</span></div></article>
           <article className="panel analytics-panel quality-panel"><div className="analytics-heading"><div><div className="section-kicker">MODEL OPERATIONS</div><h2>Quality & performance</h2></div><span className={`quality-indicator ${analytics?.monitoring?.status || 'unknown'}`}><i/>{analytics?.monitoring?.status || 'No report'}</span></div><div className="quality-stats"><div><span>Average latency</span><strong>{analytics?.average_latency_ms != null ? `${analytics.average_latency_ms} ms` : '—'}</strong></div><div><span>p95 latency</span><strong>{analytics?.p95_latency_ms != null ? `${analytics.p95_latency_ms} ms` : '—'}</strong></div><div><span>Average confidence</span><strong>{analytics?.average_confidence != null ? percent(analytics.average_confidence) : '—'}</strong></div><div><span>Low confidence</span><strong>{analytics?.low_confidence_rate != null ? percent(analytics.low_confidence_rate) : '—'}</strong></div></div><div className="benchmark"><span>Held-out test benchmark</span><strong>{analytics?.evaluation?.test_accuracy != null ? `${(analytics.evaluation.test_accuracy * 100).toFixed(1)}% accuracy` : 'Not available'}</strong><small>Macro F1 {analytics?.evaluation?.test_macro_f1 != null ? (analytics.evaluation.test_macro_f1 * 100).toFixed(1) : '—'}% · evaluation report</small></div>{analytics?.monitoring?.log_file && <div className="monitor-source">Monitor report source: {analytics.monitoring.log_file}</div>}</article>
         </section>
+        <section className={`panel drift-watch-card ${driftMonitor?.status === 'warning' ? 'has-warning' : ''}`} aria-label="Drift monitoring status">
+          <div className="drift-watch-heading"><div><div className="section-kicker">DRIFT MONITORING</div><h2>Input and prediction shift</h2><p>Recent scan signals compared with the saved reference period.</p></div><span className={`drift-status ${driftMonitor?.status || 'unknown'}`}><i/>{driftStatusLabels[driftMonitor?.status] || 'Waiting for API data'}</span></div>
+          <div className="drift-watch-metrics"><div><span>Recent scans</span><strong>{driftMonitor ? `${driftMonitor.window_predictions} / ${driftMonitor.minimum_predictions}` : '—'}</strong><small>needed before live drift checks</small></div><div><span>Image brightness baseline</span><strong>{driftMonitor ? (driftMonitor.brightness_reference_available ? 'Available' : 'Missing') : '—'}</strong><small>input appearance signal</small></div><div><span>Predicted class baseline</span><strong>{driftMonitor ? (driftMonitor.class_mix_reference_available ? 'Available' : 'Missing') : '—'}</strong><small>prediction mix signal</small></div></div>
+          {driftMonitor?.alerts?.length ? <div className="drift-alert-list">{driftMonitor.alerts.map((alert) => <div key={alert.id}><strong>{alert.title}</strong><span>{alert.evidence}</span></div>)}</div> : <p className="drift-watch-note">{driftMonitor?.status === 'insufficient_data' ? `Collect at least ${driftMonitor.minimum_predictions} recent predictions before these checks can alert.` : driftMonitor?.status === 'baseline_missing' ? 'Create a reference with “python -m src.monitor_logs --build-reference” before comparing live input and class mix.' : driftMonitor?.status === 'partial_baseline' ? 'One reference signal is missing, so the live drift view is incomplete.' : driftMonitor?.status === 'watching' ? 'No brightness or predicted-class shift has crossed its configured threshold.' : 'Drift status will appear when the API dashboard is available.'}</p>}
+          <button className="drift-details-button" onClick={() => setActivePage('performance')}>View model signals <Icon name="arrow" size={14}/></button>
+        </section>
         </div>
 
         <div className="page-view analyze-view">
@@ -205,7 +232,7 @@ function App() {
 
           <article className="panel result-panel" aria-live="polite">
             <div className="panel-heading result-heading"><div><div className="section-kicker">LATEST RESULT</div><h2>{current ? 'Analysis insight' : 'Your result will appear here'}</h2><p>{current ? current.filename : 'Start a scan to see the prediction.'}</p></div>{current && <span className={`result-state ${current.low_confidence ? 'uncertain' : 'confirmed'}`}><i/>{current.low_confidence ? 'Review result' : 'High confidence'}</span>}</div>
-            {current ? <div className="result-content"><div className={`result-hero ${current.low_confidence ? 'caution' : ''}`}><span className="result-leaf"><Icon name="leaf" size={20}/></span><div><span className="result-label">{current.low_confidence ? 'POSSIBLE MATCH' : /healthy/i.test(current.predicted_class) ? 'HEALTHY LEAF' : 'PREDICTED CONDITION'}</span><h3>{pretty(current.predicted_class)}</h3><p>{current.low_confidence ? (current.message || 'Try a closer, well-lit photo of one leaf.') : 'Review the result alongside what you can see in the field.'}</p></div></div><div className="confidence-row"><div><span>Model confidence</span><strong>{percent(confidence)}</strong></div><div className="confidence-track"><span style={{ width: percent(confidence) }}/></div></div><div className="top-predictions"><div className="predictions-title">OTHER POSSIBLE MATCHES <span>TOP {current.top_k?.length || 1}</span></div>{(current.top_k || [{ class: current.predicted_class, confidence }]).map((guess, i) => <div className="prediction-row" key={`${guess.class}-${i}`}><span className={`prediction-rank ${i === 0 ? 'first' : ''}`}>{String(i + 1).padStart(2, '0')}</span><span className="prediction-name">{pretty(guess.class)}</span><span className="prediction-percent">{percent(guess.confidence)}</span></div>)}</div></div> : <div className="empty-result"><div className="empty-illustration"><span><Icon name="leaf" size={34}/></span><i/><i/><i/></div><strong>Insight starts with a leaf</strong><p>Upload an image and AgroScan will return its best match with confidence scores.</p></div>}
+            {current ? <div className="result-content"><div className={`result-hero ${current.low_confidence ? 'caution' : ''}`}><span className="result-leaf"><Icon name="leaf" size={20}/></span><div><span className="result-label">{current.low_confidence ? 'POSSIBLE MATCH' : /healthy/i.test(current.predicted_class) ? 'HEALTHY LEAF' : 'PREDICTED CONDITION'}</span><h3>{pretty(current.predicted_class)}</h3><p>{current.low_confidence ? (current.message || 'Try a closer, well-lit photo of one leaf.') : 'Review the result alongside what you can see in the field.'}</p></div></div><div className="confidence-row"><div><span>Model confidence</span><strong>{percent(confidence)}</strong></div><div className="confidence-track"><span style={{ width: percent(confidence) }}/></div></div><div className="top-predictions"><div className="predictions-title">OTHER POSSIBLE MATCHES <span>TOP {current.top_k?.length || 1}</span></div>{(current.top_k || [{ class: current.predicted_class, confidence }]).map((guess, i) => <div className="prediction-row" key={`${guess.class}-${i}`}><span className={`prediction-rank ${i === 0 ? 'first' : ''}`}>{String(i + 1).padStart(2, '0')}</span><span className="prediction-name">{pretty(guess.class)}</span><span className="prediction-percent">{percent(guess.confidence)}</span></div>)}</div>{file && result && <section className="explain-card" aria-label="Model explanation"><div className="predictions-title">UNDERSTAND THIS RESULT</div><div className="explain-actions"><button disabled={!!explainBusy} className={explanation?.method === 'lime' ? 'selected' : ''} onClick={() => explain('lime')}>{explainBusy === 'lime' ? <><span className="spinner explain-spinner"/>Generating LIME…</> : 'Explain with LIME'}</button><button disabled={!!explainBusy} className={explanation?.method === 'shap' ? 'selected' : ''} onClick={() => explain('shap')}>{explainBusy === 'shap' ? <><span className="spinner explain-spinner"/>Generating SHAP…</> : 'Explain with SHAP'}</button></div>{explainError && <div className="feedback-error" role="alert">{explainError}</div>}{explanation && <div className="explain-result"><img src={explanation.explanation_image} alt={`${explanation.method.toUpperCase()} explanation for ${pretty(explanation.predicted_class)}`}/><p>{explanation.description}</p><small>{explanation.method.toUpperCase()} · {pretty(explanation.predicted_class)} · {percent(explanation.confidence)}</small></div>}</section>}</div> : <div className="empty-result"><div className="empty-illustration"><span><Icon name="leaf" size={34}/></span><i/><i/><i/></div><strong>Insight starts with a leaf</strong><p>Upload an image and AgroScan will return its best match with confidence scores.</p></div>}
             <div className="result-foot"><Icon name="pulse" size={15}/><span>{current?.model_version ? `Model version ${current.model_version}` : 'Predictions are decision support, not a diagnosis.'}</span></div>
             {current?.prediction_id && <div className="feedback-card"><div><strong>Can you verify this prediction?</strong><span>Your feedback helps measure live accuracy.</span></div>{feedbackSaved ? <div className="feedback-success">Feedback saved. Live metrics updated.</div> : <><div className="feedback-actions"><button disabled={feedbackBusy} onClick={() => submitFeedback(current.predicted_class)}>Correct</button><label>Actual class<select value={feedbackClass || current.predicted_class} onChange={(e) => setFeedbackClass(e.target.value)}>{(ready?.classes || analytics?.model?.classes || []).map((name) => <option key={name} value={name}>{pretty(name)}</option>)}</select></label><button className="feedback-correction" disabled={feedbackBusy} onClick={() => submitFeedback(feedbackClass || current.predicted_class)}>{feedbackBusy ? 'Saving…' : 'Submit correction'}</button></div>{feedbackError && <span className="feedback-error" role="alert">{feedbackError}</span>}</>}</div>}
           </article>

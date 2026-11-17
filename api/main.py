@@ -5,6 +5,7 @@ pixel range, centre crop, confidence threshold). Without that file the API falls
 models/model.keras + models/classes.json from the repo's own training pipeline.
 """
 import io
+import base64
 import json
 import logging
 import os
@@ -18,7 +19,7 @@ from pathlib import Path
 import keras
 import numpy as np
 import yaml
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
@@ -34,6 +35,9 @@ PRED_LOG = os.getenv("PREDICTION_LOG", "logs/predictions.jsonl")
 FEEDBACK_LOG = os.getenv("FEEDBACK_LOG", "logs/feedback.jsonl")
 REPORT_DIR = Path(os.getenv("REPORT_DIR", "reports"))
 MAX_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", 10 * 1024 * 1024))
+LIME_NUM_SAMPLES = max(50, int(os.getenv("LIME_NUM_SAMPLES", "200")))
+LIME_BATCH_SIZE = max(1, int(os.getenv("LIME_BATCH_SIZE", "32")))
+LIME_SUPERPIXELS = max(20, int(os.getenv("LIME_SUPERPIXELS", "80")))
 
 state = {"model": None, "classes": None, "cfg": None, "registry_model": None, "registry_version": None}
 history_lock = threading.RLock()
@@ -310,7 +314,12 @@ def dashboard_data():
             "action": "Keep verifying prediction results; confidence alone is not accuracy.",
         })
 
-    min_predictions = int(window_cfg.get("min_predictions", 50))
+    min_predictions = int(window_cfg.get("min_predictions", 20))
+    reference_path = Path(monitor_cfg.get("paths", {}).get("reference", "reports/monitoring/reference.json"))
+    try:
+        reference = json.loads(reference_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        reference = None
     if len(rows) >= min_predictions:
         low_rate = low_count / len(rows) if rows else None
         low_limit = alert_cfg.get("low_confidence_rate_warn")
@@ -329,11 +338,6 @@ def dashboard_data():
                 "action": "Review recent low-confidence images and collect verified labels.",
             })
 
-        reference_path = Path(monitor_cfg.get("paths", {}).get("reference", "reports/monitoring/reference.json"))
-        try:
-            reference = json.loads(reference_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            reference = None
         brightness = [float(r["brightness"]) for r in rows if isinstance(r.get("brightness"), (int, float))]
         if reference and brightness and reference.get("brightness_mean") is not None:
             ref_mean = float(reference["brightness_mean"])
@@ -396,6 +400,20 @@ def dashboard_data():
                 "action": "Inspect API resource use and recent deployment or traffic changes.",
             })
 
+    drift_alerts = [item for item in live_alerts if item.get("id") in {"brightness_drift", "class_mix_shift"}]
+    has_brightness_reference = bool(reference and reference.get("brightness_mean") is not None)
+    has_class_mix_reference = bool((reference or {}).get("class_mix"))
+    if len(rows) < min_predictions:
+        drift_status = "insufficient_data"
+    elif not has_brightness_reference and not has_class_mix_reference:
+        drift_status = "baseline_missing"
+    elif drift_alerts:
+        drift_status = "warning"
+    elif not (has_brightness_reference and has_class_mix_reference):
+        drift_status = "partial_baseline"
+    else:
+        drift_status = "watching"
+
     return {
         "generated_at": now.isoformat(timespec="seconds"),
         "total_predictions": total_predictions,
@@ -444,6 +462,15 @@ def dashboard_data():
             "live_accuracy_warn": alert_cfg.get("live_accuracy_warn"),
             "min_labeled_predictions": min_labels,
             "min_predictions": min_predictions,
+        },
+        "drift_monitor": {
+            "status": drift_status,
+            "window_predictions": len(rows),
+            "minimum_predictions": min_predictions,
+            "reference_path": str(reference_path),
+            "brightness_reference_available": has_brightness_reference,
+            "class_mix_reference_available": has_class_mix_reference,
+            "alerts": drift_alerts,
         },
         "monitoring": {
             "status": monitor.get("status"),
@@ -508,6 +535,149 @@ async def predict(file: UploadFile = File(...)):
     except OSError:
         log.warning("could not write prediction log")
     return JSONResponse(result)
+
+
+def _explanation_predict(images):
+    """Predict XAI perturbations in the same tensor range produced by prepare_for_model."""
+    batch = np.asarray(images, dtype=np.float32)
+    # The uploaded image is prepared once with the exact /predict preprocessing. XAI
+    # masks operate in that already resized/cropped model input space; only restore the
+    # configured numeric range after masking when displaying pixels as 0..255 RGB.
+    if state["cfg"]["input_range"] == "0_1":
+        batch = batch / 255.0
+    # Calling the model directly avoids `predict()`'s per-batch data adapter setup,
+    # which is costly because LIME invokes this callback several times.
+    return np.asarray(state["model"](batch, training=False), dtype=np.float64)
+
+
+def _overlay_png(image, heat, mode):
+    """Create a compact positive/negative heat overlay and return a data URI."""
+    from matplotlib import colormaps
+
+    rgb = np.asarray(image.convert("RGB").resize((heat.shape[1], heat.shape[0])), dtype=np.float32) / 255
+    scale = float(np.max(np.abs(heat))) or 1.0
+    normalized = np.clip(heat / scale, -1, 1)
+    if mode == "lime":
+        mask = normalized > 0.15
+        overlay = rgb.copy()
+        overlay[mask] = overlay[mask] * 0.42 + np.array([0.20, 0.80, 0.42]) * 0.58
+    else:
+        colors = colormaps["coolwarm"]((normalized + 1) / 2)[..., :3]
+        strength = np.clip(np.abs(normalized), 0, 1)[..., None] * 0.68
+        overlay = rgb * (1 - strength) + colors * strength
+    out = Image.fromarray(np.uint8(np.clip(overlay, 0, 1) * 255))
+    buf = io.BytesIO()
+    out.save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+@app.post("/explain")
+async def explain(file: UploadFile = File(...), method: str = Form(...)):
+    """Explain the same model prediction using LIME superpixels or SHAP image masking."""
+    if state["model"] is None:
+        raise HTTPException(503, "model not loaded")
+    method = method.lower().strip()
+    if method not in {"lime", "shap"}:
+        raise HTTPException(422, "method must be 'lime' or 'shap'")
+    data = await file.read()
+    if not data:
+        raise HTTPException(400, "empty file")
+    if len(data) > MAX_BYTES:
+        raise HTTPException(413, f"file larger than {MAX_BYTES} bytes")
+    try:
+        with Image.open(io.BytesIO(data)) as source:
+            source.verify()
+        prepared = prepare_for_model(data, state["cfg"]["img_size"], state["cfg"]["input_range"],
+                                     state["cfg"]["center_crop"]).numpy()
+        # Keep a display image aligned with the exact resized/cropped model input.
+        display_pixels = prepared * 255 if state["cfg"]["input_range"] == "0_1" else prepared
+        display = Image.fromarray(np.uint8(np.clip(display_pixels, 0, 255)))
+        pixels = np.asarray(display)
+    except Exception as exc:
+        raise HTTPException(400, "could not decode image (use jpg or png)") from exc
+
+    try:
+        baseline = _explanation_predict([pixels])[0]
+        class_index = int(np.argmax(baseline))
+        if method == "lime":
+            try:
+                from lime.lime_image import LimeImageExplainer
+                from skimage.segmentation import mark_boundaries, slic
+            except ImportError as exc:
+                raise HTTPException(503, "LIME requires lime and scikit-image; install requirements-xai.txt") from exc
+            segments = slic(pixels, n_segments=LIME_SUPERPIXELS, compactness=10, sigma=1, start_label=0,
+                            channel_axis=-1)
+            explanation = LimeImageExplainer(random_state=42).explain_instance(
+                pixels, _explanation_predict, labels=(class_index,), hide_color=0,
+                num_samples=LIME_NUM_SAMPLES, batch_size=LIME_BATCH_SIZE,
+                segmentation_fn=lambda image: segments)
+            weights = dict(explanation.local_exp[class_index])
+            heat = np.zeros(segments.shape, dtype=np.float32)
+            for segment_id, weight in weights.items():
+                heat[segments == segment_id] = weight
+            positive = sorted(((int(i), float(w)) for i, w in weights.items() if w > 0), key=lambda row: row[1], reverse=True)[:8]
+            boundary = mark_boundaries(np.asarray(display) / 255.0, segments, color=(0.1, 0.9, 0.35), mode="thick")
+            result_image = Image.fromarray(np.uint8(boundary * 255))
+            # Blend each positive superpixel according to its relative LIME weight.
+            positive_scale = max((weight for weight in weights.values() if weight > 0), default=1.0)
+            strength = np.zeros(segments.shape, dtype=np.float32)
+            for segment_id, weight in weights.items():
+                if weight > 0:
+                    strength[segments == segment_id] = min(weight / positive_scale, 1.0)
+            alpha_mask = Image.fromarray(np.uint8(strength * 110), "L")
+            green = Image.new("RGBA", result_image.size, (49, 191, 105, 0))
+            green.putalpha(alpha_mask)
+            result_image = Image.alpha_composite(result_image.convert("RGBA"), green).convert("RGB")
+            buf = io.BytesIO(); result_image.save(buf, format="PNG")
+            explanation_uri = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+            metadata = {"method": "lime", "superpixels": int(segments.max() + 1),
+                        "important_superpixels": [{"segment": i, "weight": round(w, 5)} for i, w in positive],
+                        "samples": LIME_NUM_SAMPLES, "batch_size": LIME_BATCH_SIZE}
+            description = "Green superpixels support the predicted class; brighter outlined regions have stronger positive LIME weights."
+        else:
+            try:
+                import shap
+            except ImportError as exc:
+                raise HTTPException(503, "SHAP requires shap; install requirements-xai.txt") from exc
+            try:
+                masker = shap.maskers.Image("blur(16,16)", pixels.shape)
+            except ModuleNotFoundError as exc:
+                if exc.name == "cv2":
+                    raise HTTPException(
+                        503,
+                        "SHAP image explanations need OpenCV. In AgroScan's active Python environment, "
+                        "run 'python -m pip install opencv-python-headless' and restart the API.",
+                    ) from exc
+                raise
+            explainer = shap.Explainer(_explanation_predict, masker, algorithm="partition",
+                                       output_names=state["classes"])
+            values = explainer(pixels[None], max_evals=160, batch_size=16)
+            raw = np.asarray(values.values)
+            # SHAP image outputs are (batch, H, W, RGB, classes).
+            if raw.ndim == 5:
+                contribution = raw[0, ..., class_index].mean(axis=-1)
+            elif raw.ndim == 4:
+                contribution = raw[0].mean(axis=-1)
+            else:
+                raise ValueError(f"unexpected SHAP image output shape {raw.shape}")
+            heat = np.asarray(contribution, dtype=np.float32)
+            explanation_uri = _overlay_png(display, heat, "shap")
+            flat = heat.ravel()
+            metadata = {"method": "shap", "max_evals": 160,
+                        "positive_pixels": int(np.count_nonzero(flat > 0)),
+                        "negative_pixels": int(np.count_nonzero(flat < 0)),
+                        "positive_strength": round(float(np.maximum(heat, 0).sum()), 5),
+                        "negative_strength": round(float(np.minimum(heat, 0).sum()), 5)}
+            description = "Red regions increase the selected class score; blue regions decrease it. Color intensity shows relative contribution."
+    except HTTPException:
+        raise
+    except Exception as exc:
+        log.exception("%s explanation failed", method)
+        raise HTTPException(500, f"{method.upper()} explanation failed: {exc}") from exc
+
+    return {"predicted_class": state["classes"][class_index],
+            "confidence": round(float(baseline[class_index]), 4), "method": method,
+            "explanation_image": explanation_uri, "description": description, "metadata": metadata}
 
 
 @app.delete("/history")

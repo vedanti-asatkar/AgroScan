@@ -1,0 +1,6 @@
+# Optional dependencies for the /explain endpoint. Install after requirements.txt.
+lime>=0.2.0.1
+shap>=0.45
+scikit-image>=0.22
+matplotlib>=3.8
+opencv-python-headless>=4.8

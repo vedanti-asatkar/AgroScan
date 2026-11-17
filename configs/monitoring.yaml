@@ -16,7 +16,7 @@ window:
   last_days: 7
   # Below this many predictions the summary is marked "insufficient_data"
   # and no alert or retrain trigger can fire.
-  min_predictions: 50
+  min_predictions: 20
   # Verified labels needed before live accuracy can raise a warning.
   min_labeled_predictions: 20
 
