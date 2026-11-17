@@ -4,8 +4,8 @@ The model and its preprocessing are described by models/model_meta.json (file na
 pixel range, centre crop, confidence threshold). Without that file the API falls back to
 models/model.keras + models/classes.json from the repo's own training pipeline.
 """
-import io
 import base64
+import io
 import json
 import logging
 import os
@@ -615,7 +615,10 @@ async def explain(file: UploadFile = File(...), method: str = Form(...)):
             heat = np.zeros(segments.shape, dtype=np.float32)
             for segment_id, weight in weights.items():
                 heat[segments == segment_id] = weight
-            positive = sorted(((int(i), float(w)) for i, w in weights.items() if w > 0), key=lambda row: row[1], reverse=True)[:8]
+            positive = sorted(
+                ((int(i), float(w)) for i, w in weights.items() if w > 0),
+                key=lambda row: row[1], reverse=True,
+            )[:8]
             boundary = mark_boundaries(np.asarray(display) / 255.0, segments, color=(0.1, 0.9, 0.35), mode="thick")
             result_image = Image.fromarray(np.uint8(boundary * 255))
             # Blend each positive superpixel according to its relative LIME weight.
@@ -628,12 +631,16 @@ async def explain(file: UploadFile = File(...), method: str = Form(...)):
             green = Image.new("RGBA", result_image.size, (49, 191, 105, 0))
             green.putalpha(alpha_mask)
             result_image = Image.alpha_composite(result_image.convert("RGBA"), green).convert("RGB")
-            buf = io.BytesIO(); result_image.save(buf, format="PNG")
+            buf = io.BytesIO()
+            result_image.save(buf, format="PNG")
             explanation_uri = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
             metadata = {"method": "lime", "superpixels": int(segments.max() + 1),
                         "important_superpixels": [{"segment": i, "weight": round(w, 5)} for i, w in positive],
                         "samples": LIME_NUM_SAMPLES, "batch_size": LIME_BATCH_SIZE}
-            description = "Green superpixels support the predicted class; brighter outlined regions have stronger positive LIME weights."
+            description = (
+                "Green superpixels support the predicted class; brighter outlined regions have stronger "
+                "positive LIME weights."
+            )
         else:
             try:
                 import shap
@@ -668,7 +675,10 @@ async def explain(file: UploadFile = File(...), method: str = Form(...)):
                         "negative_pixels": int(np.count_nonzero(flat < 0)),
                         "positive_strength": round(float(np.maximum(heat, 0).sum()), 5),
                         "negative_strength": round(float(np.minimum(heat, 0).sum()), 5)}
-            description = "Red regions increase the selected class score; blue regions decrease it. Color intensity shows relative contribution."
+            description = (
+                "Red regions increase the selected class score; blue regions decrease it. "
+                "Color intensity shows relative contribution."
+            )
     except HTTPException:
         raise
     except Exception as exc:
